@@ -1,6 +1,10 @@
 from fastapi import FastAPI, HTTPException
 
-app = FastAPI()
+app = FastAPI(
+    title="EiT backend",
+    description="Backend for EiT project",
+    version="0.0.1",
+)
 
 counter = 1
 
