@@ -7,6 +7,13 @@
 - Ensure that python is installed on your machine. [Download Python](https://www.python.org/downloads/)
 - Ensure that Node.js is installed on your machine. [Download Node.js](https://nodejs.org/en/download/)
 
+### Environment Variables
+The application uses environment variables to store sensitive information. The environment variables are stored in a `.env` file in the root directory of the project. Copy the `.env.example` file and rename it to `.env`. Fill in the required information in the `.env` file.
+
+```bash
+cp .env.example .env
+```
+
 ## Usage
 To run the application run the following command
 ```bash
