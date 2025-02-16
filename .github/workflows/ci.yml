@@ -24,6 +24,9 @@ jobs:
 
   push-image:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     needs: [build]
     steps:
       - uses: actions/checkout@v3 
@@ -52,6 +55,7 @@ jobs:
   dependabot:
       name: 'Dependabot'
       runs-on: ubuntu-latest
+      permissions: write-all
       # Build jobs, if one of them fails, it won't merge the PR.
       needs: [build] 
       # Detect that the PR author is dependabot
