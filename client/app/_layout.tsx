@@ -1,39 +1,38 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
-import 'react-native-reanimated';
+import React from 'react';
+import { Slot } from 'expo-router';
+import { useColorScheme } from 'react-native';
+import { ThemeProvider, Theme } from '@react-navigation/native';
+import Colors from '../constants/Colors';
 
-import { useColorScheme } from '@/hooks/useColorScheme';
-
-// Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
+// Create a custom navigation theme with required properties:
+function useCustomTheme(colorScheme: 'light' | 'dark'): Theme {
+  return {
+    dark: colorScheme === 'dark',
+    colors: {
+      primary: Colors[colorScheme].tint,
+      background: Colors[colorScheme].background,
+      card: Colors[colorScheme].background, // Used for headers, tab bars, etc.
+      text: Colors[colorScheme].text,
+      border: '#000000',
+      notification: Colors[colorScheme].tint,
+    },
+    // fonts
+    fonts: {
+      regular: { fontFamily: 'System', fontWeight: 'normal' },
+      medium: { fontFamily: 'System', fontWeight: '500' },
+      bold: { fontFamily: 'System', fontWeight: 'bold' },
+      heavy: { fontFamily: 'System', fontWeight: '700' },
+    },
+  };
+}
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
-
-  useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded]);
-
-  if (!loaded) {
-    return null;
-  }
+  const colorScheme = useColorScheme() ?? 'light';
+  const theme = useCustomTheme(colorScheme);
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
+    <ThemeProvider value={theme}>
+      <Slot />
     </ThemeProvider>
   );
 }

@@ -1,27 +1,26 @@
-// app/(tabs)/profile.tsx
-import React from 'react';
-
-
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useContext } from 'react';
+import { View, Text, StyleSheet,useColorScheme } from 'react-native';
+import Colors from '../../constants/Colors';
 
 export default function ProfileScreen() {
-  return (
-    <View style={styles.container}>
-      <Text style={styles.text}>Profile Screen</Text>
-      {/* Add more content here as you develop your profile page */}
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1, 
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#fff',
-  },
-  text: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-});
+    const colorScheme = useColorScheme() ?? 'light';
+    return (
+      <View
+        style={[
+          styles.container,
+          { backgroundColor: Colors[colorScheme].background },
+        ]}
+      >
+        <Text style={{ color: Colors[colorScheme].text }}>
+          Hello, this is the Profile Screen!
+        </Text>
+      </View>
+    );
+  }
+  
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      padding: 16,
+    },
+  });
