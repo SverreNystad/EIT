@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Query, Path
+from fastapi import FastAPI, HTTPException, Query, Path, Request, UploadFile
 
 import os
 from typing import Optional, Union
@@ -17,6 +17,26 @@ app = FastAPI(
     description="Backend for EiT project",
     version="0.0.1",
 )
+
+from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI()
+
+origins = [
+    "http://localhost",
+    "http://localhost:8080",
+    "http://localhost:8081",
+    "http://techtaitans.com",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 kassal_api = KassalAPI(token=KASSAL_API_KEY)
 
