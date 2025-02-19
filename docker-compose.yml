@@ -8,6 +8,11 @@ services:
       - "8000:8000"
     environment:
       - KASSAL_API_KEY=${KASSAL_API_KEY}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
+
+
 
   client:
     build:
