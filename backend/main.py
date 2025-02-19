@@ -1,54 +1,134 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query, Path
 
+import os
+from typing import Optional, Union
+
+from src.configuration import KASSAL_API_KEY
+from src.kassal.kassal_service import KassalAPI
+from src.kassal.models_physical_stores import PhysicalStoresResponse, PhysicalStore
+from src.kassal.models_products import ProductsResponse, Product
+from src.kassal.models_products_ean import ProductsByEanData
+from src.kassal.models_products_compare import ProductsCompareData
+
+
+# Read API token from environment variable (ensure you set KASSAL_API_TOKEN)
 app = FastAPI(
     title="EiT backend",
     description="Backend for EiT project",
     version="0.0.1",
 )
 
-counter = 1
-
-message_history = {}
+kassal_api = KassalAPI(token=KASSAL_API_KEY)
 
 
-@app.get("/")
-async def root():
-    counter += 1
-    return {"message": f"Hello World {counter}"}
+@app.get("/physical-stores", response_model=PhysicalStoresResponse)
+async def get_physical_stores(
+    search: Optional[str] = Query(None, description="Search term for physical stores"),
+    page: int = Query(1, ge=1, description="Page number"),
+    size: int = Query(10, ge=1, description="Number of items per page"),
+    lat: Optional[float] = Query(
+        None, description="Latitude for location-based search"
+    ),
+    lng: Optional[float] = Query(
+        None, description="Longitude for location-based search"
+    ),
+    km: float = Query(5, ge=0, description="Radius in kilometers"),
+    group: Optional[str] = Query(None, description="Group filter"),
+):
+    try:
+        result = kassal_api.get_physical_stores(
+            search=search, page=page, size=size, lat=lat, lng=lng, km=km, group=group
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
-@app.get("/hello")
-async def test():
-    return {"message": "kult"}
+@app.get("/physical-stores/{store_id}", response_model=PhysicalStore)
+async def get_physical_store_by_id(
+    store_id: str = Path(..., description="ID of the physical store")
+):
+    try:
+        result = kassal_api.get_physical_store_by_id(store_id)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
-@app.post("/message")
-async def send_message(message: str):
-    if len(message) == 0 or message.lower() == "cogito er ikke kult":
-        raise HTTPException(status_code=400, detail="Error extracting text")
+@app.get("/products", response_model=ProductsResponse)
+async def get_products(
+    search: Optional[str] = Query(None, description="Search term for products"),
+    page: int = Query(1, ge=1, description="Page number"),
+    size: int = Query(10, ge=1, description="Number of items per page"),
+    vendor: Optional[str] = Query(None, description="Vendor filter"),
+    brand: Optional[str] = Query(None, description="Brand filter"),
+    price_min: Optional[Union[int, float]] = Query(
+        None, ge=0, description="Minimum price"
+    ),
+    price_max: Optional[Union[int, float]] = Query(
+        None, ge=0, description="Maximum price"
+    ),
+    unique: Optional[bool] = Query(None, description="Return only unique products"),
+    exclude_without_ean: Optional[bool] = Query(
+        None, description="Exclude products without an EAN"
+    ),
+    sort: Optional[str] = Query(None, description="Sort order"),
+):
+    try:
+        result = kassal_api.get_products(
+            search=search,
+            page=page,
+            size=size,
+            vendor=vendor,
+            brand=brand,
+            price_min=price_min,
+            price_max=price_max,
+            unique=unique,
+            exclude_without_ean=exclude_without_ean,
+            sort=sort,
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-    global counter
-    counter += 1
-    message_history[counter] = message
-    return {"message": "Message OK"}
+
+@app.get("/products/id/{product_id}", response_model=Product)
+async def get_product_by_id(
+    product_id: int = Path(..., description="ID of the product")
+):
+    try:
+        result = kassal_api.get_product_by_id(product_id)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
-@app.get("/message")
-async def get_message():
-    return {"message": message_history}
+@app.get("/products/ean/{ean}", response_model=ProductsByEanData)
+async def get_product_by_ean(ean: str = Path(..., description="EAN of the product")):
+    try:
+        result = kassal_api.get_product_by_ean(ean)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
-@app.delete("/message")
-async def delete_message(id: int):
-    if id not in message_history:
-        raise HTTPException(status_code=404, detail="Message not found")
-    message = message_history.pop(id)
-    return {"message": f"Message {message} deleted"}
+@app.get("/products/find-by-url/single", response_model=Product)
+async def find_product_by_url_single(
+    url: str = Query(..., description="URL of the product to find")
+):
+    try:
+        result = kassal_api.find_product_by_url_single(url)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
-@app.put("/message")
-async def update(id: int, value: str):
-    if id not in message_history:
-        raise HTTPException(status_code=404, detail="Message not found")
-    message_history[id] = value
-    return {"message": f"Message {id} updated to {value}"}
+@app.get("/products/find-by-url/compare", response_model=ProductsCompareData)
+async def find_product_by_url_compare(
+    url: str = Query(..., description="URL of the product for comparison")
+):
+    try:
+        result = kassal_api.find_product_by_url_compare(url)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
