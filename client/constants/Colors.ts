@@ -1,33 +1,26 @@
+/** Type that tells which color properties every theme must include */
 type ThemeColors = {
-    text: string;
+    text: string; 
     background: string;
-    tint: string;
-    tabIconDefault: string;
-    tabIconSelected: string;
-    icon: string; 
+    iconActive: string;     // Color for icons when they are selected/active.
+    iconInactive: string;   // Color for icons when they are not selected/inactive.
   };
-
-  const tintColorLight = '#2f95dc';
-  const tintColorDark = '#fff';
   
+  /** Color objects for dark and white theme */
   const Colors: { light: ThemeColors; dark: ThemeColors } = {
     light: {
       text: '#000',
       background: '#fff',
-      tint: tintColorLight,
-      tabIconDefault: '#ccc',
-      tabIconSelected: tintColorLight,
-      icon: '#555555',
+      iconInactive: '#ccc',
+      iconActive: '0000FF',
     },
     dark: {
       text: '#fff',
       background: '#000',
-      tint: tintColorDark,
-      tabIconDefault: '#ccc',
-      tabIconSelected: tintColorDark,
-      icon: '#dddddd',
+      iconInactive: '#ccc',
+      iconActive: '#fff',
     },
   };
 
-  
+
   export default Colors;

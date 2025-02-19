@@ -1,20 +1,26 @@
 import React from 'react';
 import { Slot } from 'expo-router';
 import { useColorScheme } from 'react-native';
-import { ThemeProvider, Theme } from '@react-navigation/native';
+import { ThemeProvider, Theme } from '@react-navigation/native'; // detects if the device is in 'light' or 'dark' mode.
 import Colors from '../constants/Colors';
 
-// Create a custom navigation theme with required properties:
+/**
+ * Custom hook to create a theme object for React Navigation.
+ * @param colorScheme - The current color scheme ('light' or 'dark').
+ * @returns - A theme object with the properties React Navigation expects.
+ */
 function useCustomTheme(colorScheme: 'light' | 'dark'): Theme {
   return {
+    // Set the "dark" flag to true if the color scheme is 'dark'.
     dark: colorScheme === 'dark',
+    // Define color palette for our navigation components
     colors: {
-      primary: Colors[colorScheme].tint,
       background: Colors[colorScheme].background,
-      card: Colors[colorScheme].background, // Used for headers, tab bars, etc.
       text: Colors[colorScheme].text,
+      primary: Colors[colorScheme].iconActive,
+      card: Colors[colorScheme].background,
       border: '#000000',
-      notification: Colors[colorScheme].tint,
+      notification: Colors[colorScheme].iconActive,
     },
     // fonts
     fonts: {
@@ -26,11 +32,15 @@ function useCustomTheme(colorScheme: 'light' | 'dark'): Theme {
   };
 }
 
+/** RootLayout wraps the entire app in a ThemeProvider */
 export default function RootLayout() {
+  // Get the current device color scheme ('light' or 'dark'); default to 'light'.
   const colorScheme = useColorScheme() ?? 'light';
+  // Build our custom theme
   const theme = useCustomTheme(colorScheme);
 
   return (
+    // Provide the custom theme to all nested components.
     <ThemeProvider value={theme}>
       <Slot />
     </ThemeProvider>

@@ -5,15 +5,18 @@ import Colors from '../../constants/Colors';
 import {IconSymbol} from '@/components/ui/IconSymbol';
 
 export default function TabLayout() {
+  
   const colorScheme = useColorScheme() ?? 'light';
 
   return (
     <Tabs
+    // screenOptions applies the following settings to every tab in the navigator
       screenOptions={{
         // Set the active tint color based on the current color scheme:
-        tabBarActiveTintColor: Colors[colorScheme].tint,
+        tabBarActiveTintColor: Colors[colorScheme].iconActive,
         headerShown: false,
         tabBarStyle: Platform.select({
+          // For iOS, we position the tab bar absolutely
           ios: { position: 'absolute' },
           default: {},
         }),

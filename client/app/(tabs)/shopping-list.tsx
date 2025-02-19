@@ -1,18 +1,15 @@
-import { StyleSheet, View, Text, useColorScheme } from 'react-native';
-import Colors from '../../constants/Colors';
+import { StyleSheet, View, Text} from 'react-native';
+import { useTheme } from '@react-navigation/native';
 
 
 export default function TabTwoScreen() {
-  const colorScheme = useColorScheme() ?? 'light';
+  // Get the current theme colors from React Navigation.
+    const { colors } = useTheme();
+  
     return (
-      <View
-        style={[
-          styles.container,
-          { backgroundColor: Colors[colorScheme].background },
-        ]}
-      >
-        <Text style={{ color: Colors[colorScheme].text }}>
-          Hello, this is the handleliste Screen!
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <Text style={{ color: colors.text }}>
+          Hello, this is the handeliste Screen!
         </Text>
       </View>
     );
@@ -24,3 +21,4 @@ export default function TabTwoScreen() {
       padding: 16,
     },
   });
+  

@@ -1,16 +1,13 @@
-import { Image, StyleSheet, View, Text, useColorScheme} from 'react-native';
-import Colors from '../../constants/Colors';
+import {  StyleSheet, View, Text } from 'react-native';
+import { useTheme } from '@react-navigation/native';
 
 export default function HomeScreen() {
-  const colorScheme = useColorScheme() ?? 'light';
+// Get the current theme colors from React Navigation.
+  const { colors } = useTheme();
+
   return (
-    <View
-      style={[
-        styles.container,
-        { backgroundColor: Colors[colorScheme].background },
-      ]}
-    >
-      <Text style={{ color: Colors[colorScheme].text }}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Text style={{ color: colors.text }}>
         Hello, this is the Home Screen!
       </Text>
     </View>
