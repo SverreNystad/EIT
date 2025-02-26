@@ -1,7 +1,8 @@
-from fastapi import FastAPI, HTTPException, Query, Path, Request, UploadFile
-
 import os
 from typing import Optional, Union
+
+from fastapi import FastAPI, HTTPException, Query, Path, Request, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 
 from src.configuration import KASSAL_API_KEY
 from src.kassal.kassal_service import KassalAPI
@@ -11,16 +12,12 @@ from src.kassal.models_products_ean import ProductsByEanData
 from src.kassal.models_products_compare import ProductsCompareData
 
 
-# Read API token from environment variable (ensure you set KASSAL_API_TOKEN)
 app = FastAPI(
     title="EiT backend",
     description="Backend for EiT project",
-    version="0.0.1",
+    version="0.0.2",
 )
 
-from fastapi.middleware.cors import CORSMiddleware
-
-app = FastAPI()
 
 origins = [
     "http://localhost",
