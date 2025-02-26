@@ -1,6 +1,11 @@
-const API_BASE_URL =
-  process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
+import Config from 'react-native-config';
 
+console.log('Backend API URL:', backendApiUrl);
+
+const API_BASE_URL = Config.BACKEND_API_URL || "http://localhost:8000";
+
+console.log("API_BASE_URL", API_BASE_URL);
+// $ npm install -D react-native-dotenv
 export const API_ROUTES = {
   physicalStores: {
     getPhysicalStores: `${API_BASE_URL}/physical-stores`,

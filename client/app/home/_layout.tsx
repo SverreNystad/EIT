@@ -51,12 +51,12 @@ export default function HomeStackLayout() {
         />
         <Stack.Screen 
           name="Deals" 
-          component={HomeScreen} 
+          component={DealsScreen} 
           options={{ title: 'Tilbud' }} 
         />
         <Stack.Screen 
           name="Products" 
-          component={HomeScreen} 
+          component={ProductScreen} 
           options={{ title: 'Alle matvarer' }} 
         />
       </Stack.Navigator>
