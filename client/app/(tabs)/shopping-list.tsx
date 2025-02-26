@@ -9,7 +9,7 @@ export default function TabTwoScreen() {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <Text style={{ color: colors.text }}>
-          Hello, this is the handeliste Screen!
+          Handeliste Screen!
         </Text>
       </View>
     );

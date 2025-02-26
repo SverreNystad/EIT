@@ -1,22 +1,5 @@
-import {  StyleSheet, View, Text } from 'react-native';
-import { useTheme } from '@react-navigation/native';
+import HomeStackLayout from '../home/_layout';
 
-export default function HomeScreen() {
-// Get the current theme colors from React Navigation.
-  const { colors } = useTheme();
-
-  return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Text style={{ color: colors.text }}>
-        Hello, this is the Home Screen!
-      </Text>
-    </View>
-  );
+export default function HomeTabScreen() {
+  return <HomeStackLayout />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-  },
-});

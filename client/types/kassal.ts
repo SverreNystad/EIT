@@ -15,7 +15,9 @@ export interface Nutrition {
   amount: number;
   unit: string;
 }
-
+export interface ShoppingItem extends Product {
+  checked: boolean;
+}
 export interface Store {
   name: string;
   code: string;

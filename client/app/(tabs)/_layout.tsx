@@ -3,14 +3,13 @@ import { Tabs } from 'expo-router';
 import { Platform, useColorScheme } from 'react-native';
 import Colors from '../../constants/Colors';
 import {IconSymbol} from '@/components/ui/IconSymbol';
-
 export default function TabLayout() {
   
   const colorScheme = useColorScheme() ?? 'light';
 
   return (
     <Tabs
-    // screenOptions applies the following settings to every tab in the navigator
+      // screenOptions applies the following settings to every tab in the navigator
       screenOptions={{
         // Set the active tint color based on the current color scheme:
         tabBarActiveTintColor: Colors[colorScheme].iconActive,
