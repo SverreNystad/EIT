@@ -89,7 +89,7 @@ def train_autoencoder(X_scaled: np.ndarray) -> Sequential:
     return model
 
 
-def save_model(model: Sequential, scaler: MinMaxScaler, model_path: str = "models/autoencoder_model.keras", scaler_path: str = "scaler.pkl") -> None:
+def save_model(model: Sequential, scaler: MinMaxScaler, model_path: str = "models/autoencoder_model.keras", scaler_path: str = "models/scaler.pkl") -> None:
     model.save(model_path)
     joblib.dump(scaler, scaler_path)
 
