@@ -10,6 +10,7 @@ from src.kassal.models_physical_stores import PhysicalStoresResponse, PhysicalSt
 from src.kassal.models_products import ProductsResponse, Product
 from src.kassal.models_products_ean import ProductsByEanData
 from src.kassal.models_products_compare import ProductsCompareData
+from src.recommender.rs import generate_meal_plan
 
 
 app = FastAPI(
@@ -149,3 +150,27 @@ async def find_product_by_url_compare(
         return result
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/recipes/recommend")
+async def recommend_recipes(request: Request):
+    data = request.json()
+    category = data["category"]
+    body_weight = data["body_weight"]
+    body_height = data["body_height"]
+    age = data["age"]
+    activity_intensity = data["activity_intensity"]
+    objective = data["objective"]
+    recipes_df = data["recipes_df"]
+    tolerance = data.get("tolerance", 50)
+    recommendations = generate_meal_plan(
+        category,
+        body_weight,
+        body_height,
+        age,
+        activity_intensity,
+        objective,
+        recipes_df,
+        tolerance,
+    )
+    return recommendations
