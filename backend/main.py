@@ -1,7 +1,6 @@
-import os
 from typing import Optional, Union
 
-from fastapi import FastAPI, HTTPException, Query, Path, Request, UploadFile
+from fastapi import FastAPI, HTTPException, Query, Path, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.configuration import KASSAL_API_KEY
@@ -10,7 +9,7 @@ from src.kassal.models_physical_stores import PhysicalStoresResponse, PhysicalSt
 from src.kassal.models_products import ProductsResponse, Product
 from src.kassal.models_products_ean import ProductsByEanData
 from src.kassal.models_products_compare import ProductsCompareData
-from src.recommender.rs import generate_meal_plan
+from src.recommenders.meal_plan_service import generate_meal_plan
 
 
 app = FastAPI(
