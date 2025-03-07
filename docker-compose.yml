@@ -12,11 +12,3 @@ services:
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
 
-
-
-  client:
-    build:
-      context: ./client
-      dockerfile: Dockerfile
-    ports:
-      - "80:80"
