@@ -5,8 +5,16 @@
 
 ### Prerequisites
 - Ensure that git is installed on your machine. [Download Git](https://git-scm.com/downloads)
+- In addition to git you will need git lfs installed on your machine. [Download Git LFS](https://git-lfs.github.com/)
 - Docker is used for the backend and database setup. [Download Docker](https://www.docker.com/products/docker-desktop)
 
+### Setup
+
+Pull data from the repository using the following command
+```bash
+git lfs install
+git lfs pull
+```
 
 ## Usage
 To run the application run the following command
