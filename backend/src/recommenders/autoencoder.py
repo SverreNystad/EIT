@@ -49,11 +49,9 @@ def train_autoencoder(X_scaled: np.ndarray) -> Sequential:
             Dense(64),
             LeakyReLU(),
             Dropout(0.2),
-
             # Bottleneck
             Dense(32),
             # The bottleneck layer reduces the dimensionality of the input data, capturing essential features
-
             # Decoder
             Dense(64),
             LeakyReLU(),
@@ -70,12 +68,13 @@ def train_autoencoder(X_scaled: np.ndarray) -> Sequential:
     optimizer = Adam(learning_rate=0.0001)
     model.compile(optimizer=optimizer, loss="mse", metrics=["mae"])
 
-    checkpoint_filepath = '.models/ckpt/checkpoint.model.keras'
+    checkpoint_filepath = ".models/ckpt/checkpoint.model.keras"
     model_checkpoint_callback = ModelCheckpoint(
         filepath=checkpoint_filepath,
-        monitor='val_loss',
-        mode='min',
-        save_best_only=True)
+        monitor="val_loss",
+        mode="min",
+        save_best_only=True,
+    )
 
     X_train, X_eval = train_test_split(X_scaled, train_size=0.8, random_state=42)
     model.fit(
@@ -89,12 +88,20 @@ def train_autoencoder(X_scaled: np.ndarray) -> Sequential:
     return model
 
 
-def save_model(model: Sequential, scaler: MinMaxScaler, model_path: str = "models/autoencoder_model.keras", scaler_path: str = "models/scaler.pkl") -> None:
+def save_model(
+    model: Sequential,
+    scaler: MinMaxScaler,
+    model_path: str = "models/autoencoder_model.keras",
+    scaler_path: str = "models/scaler.pkl",
+) -> None:
     model.save(model_path)
     joblib.dump(scaler, scaler_path)
 
 
-def load_trained_model(model_path: str = "models/autoencoder_model.keras", scaler_path: str = "models/scaler.pkl") -> Tuple[Sequential, MinMaxScaler]:
+def load_trained_model(
+    model_path: str = "models/autoencoder_model.keras",
+    scaler_path: str = "models/scaler.pkl",
+) -> Tuple[Sequential, MinMaxScaler]:
     model = load_model(model_path)
     scaler = joblib.load(scaler_path)
     return model, scaler
@@ -116,6 +123,3 @@ if __name__ == "__main__":
     decoded_predictions = scaler.inverse_transform(predictions)
     recommended_recipe = recipes_df.iloc[np.argmax(decoded_predictions)]
     print(recommended_recipe)
-
-    
-

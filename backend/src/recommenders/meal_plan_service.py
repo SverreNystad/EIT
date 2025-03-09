@@ -76,7 +76,7 @@ def suggest_recipes(
 ) -> pd.DataFrame:
     """
     Generate food recommendations based on the user's profile and dietary goals.
-    
+
     To learn more about the Basal Metabolic Rate (BMR) calculation, you can refer to the following link:
     * https://www.maxhealthcare.in/calculator/bmr#:~:text=The%20Mifflin%20St%20Jeor%20equation,age%20in%20years%20%2D%20161.
 
@@ -205,7 +205,11 @@ def _generate_recipe_recommendations(predicted_latent_features):
         sorted_indices = similarity_matrix[item_index].argsort()[::-1]
 
         # Create a list of tuples with similarity scores and indices, excluding the item itself
-        similar_items_list = [(similarity_matrix[item_index][idx], idx) for idx in sorted_indices if idx != item_index]
+        similar_items_list = [
+            (similarity_matrix[item_index][idx], idx)
+            for idx in sorted_indices
+            if idx != item_index
+        ]
 
         # Store the list of similar items for the current item in the recommendations dictionary
         recommendations_dict[item_index] = similar_items_list
