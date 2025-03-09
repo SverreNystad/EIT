@@ -1,8 +1,9 @@
 from typing import Tuple
 import pandas as pd
-
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
+
+from src.recommenders.autoencoder import load_trained_model
 
 
 def generate_meal_plan(
@@ -61,7 +62,6 @@ def generate_meal_plan(
     )
 
     return breakfast_options, lunch_options, dinner_options
-    
 
 
 def suggest_recipes(
@@ -71,13 +71,14 @@ def suggest_recipes(
     age: int,
     activity_intensity: str,
     objective: str,
-    model: Sequential,
-    scaler: MinMaxScaler,
-    X_scaled: np.ndarray,
     data: pd.DataFrame,
+    suggestions: int = 5,
 ) -> pd.DataFrame:
     """
     Generate food recommendations based on the user's profile and dietary goals.
+    
+    To learn more about the Basal Metabolic Rate (BMR) calculation, you can refer to the following link:
+    * https://www.maxhealthcare.in/calculator/bmr#:~:text=The%20Mifflin%20St%20Jeor%20equation,age%20in%20years%20%2D%20161.
 
     Args:
         category (str): Gender category of the user ('male' or 'female').
@@ -90,6 +91,22 @@ def suggest_recipes(
     Return:
         pd.DataFrame: Recommended recipes including name and calorie content.
     """
+    model, scaler = load_trained_model()
+    selected_columns = [
+        "Calories",
+        "FatContent",
+        "SaturatedFatContent",
+        "CholesterolContent",
+        "SodiumContent",
+        "CarbohydrateContent",
+        "FiberContent",
+        "SugarContent",
+        "ProteinContent",
+    ]
+    X_scaled = scaler.transform(data[selected_columns].sample(6000))
+    predicted_latent_features = model.predict(X_scaled)
+    recommendations_dict = _generate_recipe_recommendations(predicted_latent_features)
+
     # Calculate the Basal Metabolic Rate (BMR) for the user
     bmr = _compute_bmr(category, body_weight, body_height, age)
 
@@ -108,14 +125,13 @@ def suggest_recipes(
     # Find the index with the highest prediction probability
     top_prediction_index = np.argmax(predicted_latent_features.flatten())
 
-    recommendations_dict = _generate_recipe_recommendations(model, X_scaled)
     # Retrieve recommended recipes based on the highest prediction
     similar_recipe_indices = np.array(recommendations_dict[top_prediction_index])
     recommended_recipes = data.iloc[similar_recipe_indices[:, 1].astype(int)][
         ["Name", "Calories"]
     ]
 
-    return recommended_recipes.head(5)
+    return recommended_recipes.head(suggestions)
 
 
 def _compute_bmr(gender, body_weight, body_height, age):
@@ -179,39 +195,21 @@ def _compute_daily_caloric_intake(bmr, activity_intensity, objective):
     return round(total_caloric_intake)
 
 
-def _generate_recipe_recommendations(model, X_scaled):
-    """
-    Generate a dictionary of recommended recipes based on the trained autoencoder model.
-
-    Args:
-        model (Sequential): Trained autoencoder model.
-        X_scaled (np.ndarray): Scaled input features for the model.
-
-    Return:
-        dict: Dictionary of recommended recipes based on the model predictions.
-    """
-    # Predict latent features for the input data
-    predicted_latent_features = model.predict(X_scaled)
-
+def _generate_recipe_recommendations(predicted_latent_features):
+    recommendations_dict = {}
     similarity_matrix = cosine_similarity(predicted_latent_features)
 
-    recommendations = {}
     # Iterate over each item in the dataset
-    for item_index in range(len(X_scaled)):
+    for item_index in range(len(predicted_latent_features)):
         # Sort indices based on similarity in descending order
         sorted_indices = similarity_matrix[item_index].argsort()[::-1]
 
         # Create a list of tuples with similarity scores and indices, excluding the item itself
-        similar_items_list = [
-            (similarity_matrix[item_index][idx], idx)
-            for idx in sorted_indices
-            if idx != item_index
-        ]
+        similar_items_list = [(similarity_matrix[item_index][idx], idx) for idx in sorted_indices if idx != item_index]
 
         # Store the list of similar items for the current item in the recommendations dictionary
-        recommendations[item_index] = similar_items_list
-    return recommendations
-
+        recommendations_dict[item_index] = similar_items_list
+    return recommendations_dict
 
 
 def _find_recipes_near_target(caloric_goal, recipes_df, tolerance=50):
@@ -237,23 +235,3 @@ def _find_recipes_near_target(caloric_goal, recipes_df, tolerance=50):
         return pd.DataFrame()
 
     return matching_recipes
-
-
-if __name__ == "__main__":
-    # Define the input values
-    user_category = "male"
-    user_body_weight = 80  # in kilograms
-    user_body_height = 170  # in centimeters
-    user_age = 50  # in years
-    user_activity_intensity = "moderately_active"
-    user_objective = "weight_loss"
-
-    generate_meal_plan(
-        user_category,
-        user_body_weight,
-        user_body_height,
-        user_age,
-        user_activity_intensity,
-        user_objective,
-        recipes_df,
-    )
