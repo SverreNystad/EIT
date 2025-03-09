@@ -94,7 +94,7 @@ def save_model(model: Sequential, scaler: MinMaxScaler, model_path: str = "model
     joblib.dump(scaler, scaler_path)
 
 
-def load_trained_model(model_path: str = "models/autoencoder_model.keras", scaler_path: str = "scaler.pkl") -> Tuple[Sequential, MinMaxScaler]:
+def load_trained_model(model_path: str = "models/autoencoder_model.keras", scaler_path: str = "models/scaler.pkl") -> Tuple[Sequential, MinMaxScaler]:
     model = load_model(model_path)
     scaler = joblib.load(scaler_path)
     return model, scaler
