@@ -2,6 +2,7 @@ from typing import Optional, Union
 
 from fastapi import FastAPI, HTTPException, Query, Path, Request
 from fastapi.middleware.cors import CORSMiddleware
+import pandas as pd
 
 from src.configuration import KASSAL_API_KEY
 from src.kassal.kassal_service import KassalAPI
@@ -9,7 +10,7 @@ from src.kassal.models_physical_stores import PhysicalStoresResponse, PhysicalSt
 from src.kassal.models_products import ProductsResponse, Product
 from src.kassal.models_products_ean import ProductsByEanData
 from src.kassal.models_products_compare import ProductsCompareData
-from src.recommenders.meal_plan_service import generate_meal_plan
+from src.recommenders.meal_plan_service import generate_meal_plan, suggest_recipes
 
 
 app = FastAPI(
@@ -162,7 +163,9 @@ async def recommend_recipes(request: Request):
     objective = data["objective"]
     recipes_df = data["recipes_df"]
     tolerance = data.get("tolerance", 50)
-    recommendations = generate_meal_plan(
+    suggestions = data.get("suggestions", 5)
+
+    breakfast_options, lunch_options, dinner_options = generate_meal_plan(
         category,
         body_weight,
         body_height,
@@ -172,4 +175,21 @@ async def recommend_recipes(request: Request):
         recipes_df,
         tolerance,
     )
-    return recommendations
+
+    suggestions = suggest_recipes(
+        category,
+        body_weight,
+        body_height,
+        age,
+        activity_intensity,
+        objective,
+        recipes_df,
+        suggestions,
+    )
+
+    return {
+        "breakfast": breakfast_options,
+        "lunch": lunch_options,
+        "dinner": dinner_options,
+        "suggestions": suggestions,
+    }
