@@ -1,9 +1,10 @@
 from typing import Optional, Union
+from enum import Enum
 
+import pandas as pd
+from pydantic import BaseModel, Field
 from fastapi import FastAPI, HTTPException, Query, Path, Request
 from fastapi.middleware.cors import CORSMiddleware
-import pandas as pd
-
 from src.configuration import KASSAL_API_KEY
 from src.kassal.kassal_service import KassalAPI
 from src.kassal.models_physical_stores import PhysicalStoresResponse, PhysicalStore
@@ -152,19 +153,47 @@ async def find_product_by_url_compare(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@app.post("/recipes/recommend")
-async def recommend_recipes(request: Request):
-    data = request.json()
-    category = data["category"]
-    body_weight = data["body_weight"]
-    body_height = data["body_height"]
-    age = data["age"]
-    activity_intensity = data["activity_intensity"]
-    objective = data["objective"]
-    recipes_df = data["recipes_df"]
-    tolerance = data.get("tolerance", 50)
-    suggestions = data.get("suggestions", 5)
+class GenderEnum(str, Enum):
+    male = "male"
+    female = "female"
 
+class ActivityIntensityEnum(str, Enum):
+    sedentary = "sedentary"
+    lightly_active = "lightly_active"
+    moderately_active = "moderately_active"
+    very_active = "very_active"
+    extra_active = "extra_active"
+
+class ObjectiveEnum(str, Enum):
+    weight_loss = "weight_loss"
+    muscle_gain = "muscle_gain"
+    health_maintenance = "health_maintenance"
+
+class MealRecommendationRequest(BaseModel):
+    category: GenderEnum
+    body_weight: float
+    body_height: float
+    age: int = Field(..., gt=0, description="Age must be greater than 0")
+    activity_intensity: ActivityIntensityEnum
+    objective: ObjectiveEnum
+    tolerance: int = Field(50, gt=0, description="Tolerance must be greater than 0")
+    suggestions: int = Field(5, gt=0, description="Suggestions must be greater than 0")
+
+
+
+
+@app.post("/recipes/recommend")
+async def recommend_recipes(request: MealRecommendationRequest):
+    category = request.category.value
+    body_weight = request.body_weight
+    body_height = request.body_height
+    age = request.age
+    activity_intensity = request.activity_intensity.value
+    objective = request.objective.value
+    tolerance = request.tolerance
+    suggestions = request.suggestions
+
+    recipes_df = pd.read_csv("data/recipes.csv")
     breakfast_options, lunch_options, dinner_options = generate_meal_plan(
         category,
         body_weight,
