@@ -1,4 +1,8 @@
 import {
+  MealRecommendationRequest,
+  RecommendedRecipesResponse,
+} from "@/types/recipes";
+import {
   PhysicalStoresResponse,
   PhysicalStore,
   ProductsResponse,
@@ -115,6 +119,20 @@ export const findProductByUrlCompare = async (
       {
         params: { url },
       }
+    );
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.detail || error.message);
+  }
+};
+
+export const recommendedRecipes = async (
+  payload: MealRecommendationRequest
+): Promise<RecommendedRecipesResponse> => {
+  try {
+    const response = await axios.post<RecommendedRecipesResponse>(
+      API_ROUTES.recipes.recommend,
+      payload
     );
     return response.data;
   } catch (error: any) {

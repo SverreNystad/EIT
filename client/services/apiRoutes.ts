@@ -18,4 +18,7 @@ export const API_ROUTES = {
     getProductByUrlCompare: (url: string) =>
       `${API_BASE_URL}/products/find-by-url/compare?url=${url}`,
   },
+  recipes: {
+    recommend: `${API_BASE_URL}/recipes/recommend`,
+  },
 };
