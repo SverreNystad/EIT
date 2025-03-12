@@ -1,28 +1,26 @@
 import React from 'react';
-import { Slot } from 'expo-router';
-import { useColorScheme } from 'react-native';
-import { ThemeProvider, Theme } from '@react-navigation/native'; // detects if the device is in 'light' or 'dark' mode.
-import Colors from '../constants/Colors';
+import { Slot, Redirect, usePathname } from 'expo-router';
+import { useColorScheme, Platform } from 'react-native';
+import { ThemeProvider, Theme } from '@react-navigation/native';
+import Colors from '../constants/Colors'; 
+import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 
 /**
  * Custom hook to create a theme object for React Navigation.
- * @param colorScheme - The current color scheme ('light' or 'dark').
- * @returns - A theme object with the properties React Navigation expects.
  */
 function useCustomTheme(colorScheme: 'light' | 'dark'): Theme {
   return {
-    // Set the "dark" flag to true if the color scheme is 'dark'.
     dark: colorScheme === 'dark',
-    // Define color palette for our navigation components
     colors: {
       background: Colors[colorScheme].background,
       text: Colors[colorScheme].text,
-      primary: Colors[colorScheme].iconActive,
+      primary: Colors[colorScheme].primary,
       card: Colors[colorScheme].background,
-      border: '#000000',
-      notification: Colors[colorScheme].iconActive,
+      border: colorScheme === 'dark' ? '#333' : '#ccc',
+      notification: Colors[colorScheme].primary,
     },
-    // fonts
+    
     fonts: {
       regular: { fontFamily: 'System', fontWeight: 'normal' },
       medium: { fontFamily: 'System', fontWeight: '500' },
@@ -32,17 +30,24 @@ function useCustomTheme(colorScheme: 'light' | 'dark'): Theme {
   };
 }
 
-/** RootLayout wraps the entire app in a ThemeProvider */
 export default function RootLayout() {
-  // Get the current device color scheme ('light' or 'dark'); default to 'light'.
-  const colorScheme = useColorScheme() ?? 'light';
-  // Build our custom theme
+  const colorScheme = useColorScheme() ?? 'light'; // Detect system theme
   const theme = useCustomTheme(colorScheme);
+  const pathname = usePathname(); // Get current route
+
+  // 🚀 Ensure web users stay on `/` and hide the header
+  if (Platform.OS === 'web' && pathname !== '/' && pathname !== '/index') {
+    return <Redirect href="/" />;
+  }
 
   return (
-    // Provide the custom theme to all nested components.
     <ThemeProvider value={theme}>
-      <Slot />
+      <Stack>
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="+not-found" />
+      </Stack>
+      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
     </ThemeProvider>
   );
 }

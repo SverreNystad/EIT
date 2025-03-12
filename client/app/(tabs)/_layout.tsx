@@ -1,25 +1,26 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { Platform, useColorScheme } from 'react-native';
-import Colors from '../../constants/Colors';
-import {IconSymbol} from '@/components/ui/IconSymbol';
+import Colors, { getTheme } from '@/constants/Colors';
+import { IconSymbol } from '@/components/ui/IconSymbol';
+
 export default function TabLayout() {
-  
-  const colorScheme = useColorScheme() ?? 'light';
+  const colorScheme = useColorScheme() as 'light' | 'dark';
+  const theme = getTheme(colorScheme); // ✅ Use getTheme() for consistency
 
   return (
     <Tabs
-      // screenOptions applies the following settings to every tab in the navigator
       screenOptions={{
-        // Set the active tint color based on the current color scheme:
-        tabBarActiveTintColor: Colors[colorScheme].iconActive,
-        headerShown: false,
-        tabBarStyle: Platform.select({
-          // For iOS, we position the tab bar absolutely
-          ios: { position: 'absolute' },
-          default: {},
-        }),
         
+        tabBarActiveTintColor: theme.primary,
+        tabBarInactiveTintColor: theme.text,
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: theme.background, // ✅ Ensures proper dark mode handling
+          borderTopColor: theme.card, // ✅ Keeps design consistent
+          height: 60,
+          paddingBottom: Platform.OS === 'ios' ? 10 : 5,
+        },
       }}
     >
       {/* Home Tab */}

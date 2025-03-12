@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '@react-navigation/native';
 
-export default function ProfileScreen() {
+export default function DealsScreen() {
       const { colors } = useTheme();
     
       return (

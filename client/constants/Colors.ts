@@ -1,26 +1,20 @@
-/** Type that tells which color properties every theme must include */
-type ThemeColors = {
-    text: string; 
-    background: string;
-    iconActive: string;     // Color for icons when they are selected/active.
-    iconInactive: string;   // Color for icons when they are not selected/inactive.
-  };
-  
-  /** Color objects for dark and white theme */
-  const Colors: { light: ThemeColors; dark: ThemeColors } = {
-    light: {
-      text: '#000',
-      background: '#fff',
-      iconInactive: '#ccc',
-      iconActive: '0000FF',
-    },
-    dark: {
-      text: '#fff',
-      background: '#000',
-      iconInactive: '#ccc',
-      iconActive: '#fff',
-    },
-  };
+const Colors: Record<'light' | 'dark', { background: string; text: string; primary: string; card: string }> = {
+  light: {
+    background: '#ffffff',
+    text: '#000000',
+    primary: '#007AFF',
+    card: '#f8f9fa',
+  },
+  dark: {
+    background: '#121212',
+    text: '#ffffff',
+    primary: '#0A84FF',
+    card: '#1e1e1e',
+  },
+};
 
+export const getTheme = (colorScheme: 'light' | 'dark' | null | undefined) => {
+  return Colors[colorScheme ?? 'light']; // Default to 'light' if undefined
+};
 
-  export default Colors;
+export default Colors;

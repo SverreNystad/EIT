@@ -1,8 +1,4 @@
-import Config from 'react-native-config';
-
-console.log('Backend API URL:', backendApiUrl);
-
-const API_BASE_URL = Config.BACKEND_API_URL || "http://localhost:8000";
+const API_BASE_URL =  "http://10.22.234.26:8000";
 
 console.log("API_BASE_URL", API_BASE_URL);
 // $ npm install -D react-native-dotenv

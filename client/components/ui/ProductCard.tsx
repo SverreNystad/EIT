@@ -1,98 +1,41 @@
 import React from 'react';
-import { StyleSheet, View, TouchableOpacity } from 'react-native';
-import { Card, Title, Paragraph } from 'react-native-paper';
-import { Product } from '../../types/kassal';
+import { View, Text, Image, useColorScheme } from 'react-native';
+import Colors, { getTheme } from '@/constants/Colors';
+import { Product } from '@/types/kassal';
 
 interface ProductCardProps {
   product: Product;
-  horizontal?: boolean;
-  // Optionally pass an onPress handler to navigate to a product detail screen.
-  onPress?: () => void;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product, horizontal = false, onPress }) => {
+export default function ProductCard({ product }: ProductCardProps) {
+  const colorScheme = useColorScheme() as 'light' | 'dark'; // ✅ Ensure TypeScript recognizes 'light' | 'dark'
+  const theme = getTheme(colorScheme); // ✅ Ensure theme selection is always valid
+
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
-      <Card style={[styles.card, horizontal && styles.horizontalCard]}>
-        {horizontal ? (
-          <View style={styles.horizontalContainer}>
-            <Card.Cover source={{ uri: product.image }} style={styles.horizontalImage} />
-            <View style={styles.content}>
-              <Title numberOfLines={1} style={styles.title}>
-                {product.name}
-              </Title>
-              {product.brand && (
-                <Paragraph style={styles.brand}>
-                  {product.brand}
-                </Paragraph>
-              )}
-              <Paragraph style={styles.price}>
-                ${product.current_price.toFixed(2)}
-              </Paragraph>
-            </View>
-          </View>
-        ) : (
-          <>
-            <Card.Cover source={{ uri: product.image }} style={styles.image} />
-            <Card.Content>
-              <Title numberOfLines={1} style={styles.title}>
-                {product.name}
-              </Title>
-              {product.brand && (
-                <Paragraph style={styles.brand}>
-                  {product.brand}
-                </Paragraph>
-              )}
-              <Paragraph style={styles.price}>
-                ${product.current_price.toFixed(2)}
-              </Paragraph>
-            </Card.Content>
-          </>
-        )}
-      </Card>
-    </TouchableOpacity>
+    <View style={{
+      width: 150, 
+      backgroundColor: theme.card, 
+      borderRadius: 10, 
+      padding: 10,
+      marginRight: 10,
+      shadowColor: '#000',
+      shadowOpacity: 0.1,
+      shadowRadius: 5,
+      shadowOffset: { width: 0, height: 2 }
+    }}>
+      <Image 
+        source={{ uri: product.image }} 
+        style={{ width: '100%', height: 100, borderRadius: 10 }} 
+      />
+      <Text numberOfLines={2} style={{ fontSize: 14, fontWeight: 'bold', color: theme.text, marginTop: 5 }}>
+        {product.name}
+      </Text>
+      <Text style={{ fontSize: 12, color: theme.text, opacity: 0.7 }}>
+        {product.store?.name}
+      </Text>
+      <Text style={{ fontSize: 14, color: 'red', fontWeight: 'bold' }}>
+        {product.current_price} kr
+      </Text>
+    </View>
   );
-};
-
-const styles = StyleSheet.create({
-  card: {
-    margin: 8,
-    elevation: 2,
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  horizontalCard: {
-    flexDirection: 'row',
-  },
-  horizontalContainer: {
-    flexDirection: 'row',
-  },
-  horizontalImage: {
-    width: 100,
-    height: 100,
-  },
-  image: {
-    height: 150,
-  },
-  content: {
-    flex: 1,
-    padding: 8,
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  brand: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
-  },
-  price: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginTop: 4,
-  },
-});
-
-export default ProductCard;
+}
