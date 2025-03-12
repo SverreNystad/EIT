@@ -5,6 +5,7 @@ import Colors from '@/constants/Colors';
 import HomeScreen from './index';
 import DealsScreen from './deals';
 import ProductScreen from './products';
+import SingleProduct from './SingleProduct';
 
 const Stack = createStackNavigator();
 
@@ -35,6 +36,13 @@ export default function HomeStackLayout() {
         name="products" 
         component={ProductScreen} 
         options={{ title: 'Alle matvarer' }} 
+      />
+
+      {/* New route for a single product view */}
+      <Stack.Screen
+        name="singleProduct"
+        component={SingleProduct}
+        options={{ title: 'Product Details' }}
       />
     </Stack.Navigator>
   );

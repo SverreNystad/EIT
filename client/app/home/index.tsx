@@ -10,25 +10,24 @@ import SavingsBox from '@/components/ui/SavingsBox';
 import Section from '@/components/ui/Section';
 import { Product, ProductsResponse } from '@/types/kassal';
 
-// Define the stack param list
 type HomeStackParamList = {
   home: undefined;
   deals: undefined;
   products: undefined;
+  singleProduct: { product: Product };
 };
 
-// Use StackNavigationProp for correct typing
 type HomeScreenNavigationProp = StackNavigationProp<HomeStackParamList, 'home'>;
 
 export default function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>(); 
   const colorScheme = useColorScheme() as 'light' | 'dark';
   const theme = getTheme(colorScheme);
-  
+
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fake savings data (Replace with real API data later)
+  // TODO Fake savings data
   const co2Saved = 12.3;
   const moneySaved = 320;
 
@@ -47,6 +46,10 @@ export default function HomeScreen() {
 
     loadData();
   }, []);
+
+  const handlePressProduct = (product: Product) => {
+    navigation.navigate('singleProduct', { product });
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.background }}>
@@ -69,6 +72,7 @@ export default function HomeScreen() {
             data={products.slice(0, 4)} 
             isOfferSection 
             onSeeMore={() => navigation.navigate('deals')} 
+            productClick={handlePressProduct}
           />
 
           {/* ✅ Uses ProductCard.tsx for "Alle matvarer" */}
@@ -76,6 +80,7 @@ export default function HomeScreen() {
             title="Alle matvarer" 
             data={products.slice(0, 4)} 
             onSeeMore={() => navigation.navigate('products')} 
+            productClick={handlePressProduct}
           />
         </>
       )}

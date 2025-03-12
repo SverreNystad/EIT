@@ -10,9 +10,10 @@ interface SectionProps {
   data: Product[];
   isOfferSection?: boolean;
   onSeeMore: () => void;
+  productClick: (product: Product) => void;
 }
 
-export default function Section({ title, data, isOfferSection = false, onSeeMore }: SectionProps) {
+export default function Section({ title, data, isOfferSection = false, onSeeMore, productClick }: SectionProps) {
   const colorScheme = useColorScheme();
   const theme = getTheme(colorScheme);
 
@@ -30,7 +31,11 @@ export default function Section({ title, data, isOfferSection = false, onSeeMore
         data={data}
         keyExtractor={(item) => item.id.toString()}
         showsHorizontalScrollIndicator={false}
-        renderItem={({ item }) => isOfferSection ? <OfferCard product={item} /> : <ProductCard product={item} />}
+        renderItem={({ item }) => (
+          <Pressable onPress={() => productClick(item)}>
+            {isOfferSection ? <OfferCard product={item} /> : <ProductCard product={item} />}
+          </Pressable>
+        )}
       />
     </View>
   );
