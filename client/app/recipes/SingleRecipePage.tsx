@@ -1,16 +1,20 @@
+// SingleRecipePage.tsx
 import React from 'react';
 import {
   Image,
   Dimensions,
   TouchableOpacity,
+  FlatList,
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
 } from 'react-native';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
-import { RouteProp, useRoute} from '@react-navigation/native';
 import { useColorScheme } from 'react-native';
+import { RouteProp, useRoute } from '@react-navigation/native';
 import { RecipeStackParamList } from './_layout';
 import { getTheme } from '@/constants/Colors';
-import { MealRecommendationResponse } from '@/types/recipes';
-
+import { parseImagesString, parseInstructionsString } from './utils'; // Your images parser helper
 type SingleRecipePageRouteProp = RouteProp<RecipeStackParamList, 'singleRecipe'>;
 
 export default function SingleRecipePage() {
@@ -19,43 +23,31 @@ export default function SingleRecipePage() {
   const colorScheme = useColorScheme() || 'light';
   const theme = getTheme(colorScheme);
 
-  /**
-   * Attempt to parse and display the first image if available.
-   * If `Images` is not a valid URL or empty, display a placeholder instead.
-   */
-  const parseRecipeImage = (): string | null => {
-    if (!recipe.Images) return null;
-    console.log('====================================');
-    console.log('Recipe Images:', recipe.Images);
-    console.log('====================================');
-    // Your CSV might store images in a tricky format, e.g. "c(""url1"", ""url2"")"
-    // If you have a known format, you can parse it. For now, let's assume it might be
-    // a single URL or a comma-separated list. Adjust this parsing as needed:
-    const potentialUrls = recipe.Images.split(',').map((url: string) => url.replace(/[^A-Za-z0-9_\-.:/]/g, '').trim());
-    // If the first item appears to be a valid URL, return it:
-    if (potentialUrls.length > 0 && potentialUrls[0].startsWith('http')) {
-      return potentialUrls[0];
-    }
-    return null;
-  };
-
-  const imageUrl = parseRecipeImage();
+  const imageUrls = parseImagesString(recipe.Images ?? '');
+  const instructions = parseInstructionsString(recipe.RecipeInstructions ?? '');
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
-      {/* Recipe Image Section */}
+      {/* Recipe Image(s) Section */}
       <View style={styles.imageContainer}>
-        {imageUrl ? (
-          <Image
-            source={{ uri: imageUrl }}
-            style={styles.image}
-            resizeMode="cover"
+        {imageUrls.length > 0 ? (
+          <FlatList
+            data={imageUrls}
+            keyExtractor={(item, index) => `${item}-${index}`}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            renderItem={({ item }) => (
+              <Image
+                source={{ uri: item }}
+                style={styles.image}
+                resizeMode="cover"
+              />
+            )}
           />
         ) : (
-          <View style={[styles.imagePlaceholder, { backgroundColor: theme.cardBackground }]}>
-            <Text style={{ color: theme.text, opacity: 0.6 }}>
-              No Image Available
-            </Text>
+          <View style={styles.imagePlaceholder}>
+            <Text style={{ color: theme.text, opacity: 0.6 }}>No Image Available</Text>
           </View>
         )}
       </View>
@@ -65,7 +57,6 @@ export default function SingleRecipePage() {
         <Text style={[styles.title, { color: theme.text }]}>{recipe.Name}</Text>
         <Text style={[styles.author, { color: theme.text }]}>by {recipe.AuthorName}</Text>
 
-        {/* Rating and Reviews */}
         {(recipe.AggregatedRating || recipe.ReviewCount) && (
           <View style={styles.ratingContainer}>
             {recipe.AggregatedRating && (
@@ -81,13 +72,12 @@ export default function SingleRecipePage() {
           </View>
         )}
 
-        {/* Cook/Prep/Total Times */}
         <View style={styles.timesRow}>
-          {!!recipe.CookTime && (
+          {recipe.CookTime ? (
             <Text style={[styles.timesText, { color: theme.text }]}>
               Cook: {recipe.CookTime.replace('PT', '')}
             </Text>
-          )}
+          ) : null}
           <Text style={[styles.timesText, { color: theme.text }]}>
             Prep: {recipe.PrepTime.replace('PT', '')}
           </Text>
@@ -99,70 +89,56 @@ export default function SingleRecipePage() {
 
       {/* Description */}
       <View style={styles.section}>
-        <Text style={[styles.sectionHeader, { color: theme.text }]}>
-          Description
-        </Text>
+        <Text style={[styles.sectionHeader, { color: theme.text }]}>Description</Text>
         <Text style={[styles.sectionBody, { color: theme.text }]}>
           {recipe.Description || 'No description available.'}
         </Text>
       </View>
 
-      {/* Instructions */}
+      {/* Instructions as a Numbered List */}
       <View style={styles.section}>
-        <Text style={[styles.sectionHeader, { color: theme.text }]}>
-          Instructions
-        </Text>
-        <Text style={[styles.sectionBody, { color: theme.text }]}>
-          {recipe.RecipeInstructions}
-        </Text>
+        <Text style={[styles.sectionHeader, { color: theme.text }]}>Instructions</Text>
+        {instructions.length > 0 ? (
+          instructions.map((step: string, index: number) => (
+            <View key={index} style={styles.instructionStep}>
+              <Text style={[styles.instructionNumber, { color: theme.primary }]}>{index + 1}.</Text>
+              <Text style={[styles.instructionText, { color: theme.text }]}>{step}</Text>
+            </View>
+          ))
+        ) : (
+          <Text style={[styles.sectionBody, { color: theme.text }]}>
+            No instructions available.
+          </Text>
+        )}
       </View>
 
       {/* Nutritional Info */}
       <View style={styles.section}>
-        <Text style={[styles.sectionHeader, { color: theme.text }]}>
-          Nutritional Info
-        </Text>
+        <Text style={[styles.sectionHeader, { color: theme.text }]}>Nutritional Info</Text>
         <View style={styles.nutritionRow}>
-          <Text style={[styles.nutritionLabel, { color: theme.text }]}>
-            Calories:
-          </Text>
-          <Text style={[styles.nutritionValue, { color: theme.text }]}>
-            {Math.round(recipe.Calories)}
-          </Text>
+          <Text style={[styles.nutritionLabel, { color: theme.text }]}>Calories:</Text>
+          <Text style={[styles.nutritionValue, { color: theme.text }]}>{Math.round(recipe.Calories)} kcal</Text>
         </View>
         <View style={styles.nutritionRow}>
-          <Text style={[styles.nutritionLabel, { color: theme.text }]}>
-            Protein:
-          </Text>
-          <Text style={[styles.nutritionValue, { color: theme.text }]}>
-            {Math.round(recipe.ProteinContent)} g
-          </Text>
+          <Text style={[styles.nutritionLabel, { color: theme.text }]}>Protein:</Text>
+          <Text style={[styles.nutritionValue, { color: theme.text }]}>{Math.round(recipe.ProteinContent)} g</Text>
         </View>
         <View style={styles.nutritionRow}>
-          <Text style={[styles.nutritionLabel, { color: theme.text }]}>
-            Carbs:
-          </Text>
-          <Text style={[styles.nutritionValue, { color: theme.text }]}>
-            {Math.round(recipe.CarbohydrateContent)} g
-          </Text>
+          <Text style={[styles.nutritionLabel, { color: theme.text }]}>Carbs:</Text>
+          <Text style={[styles.nutritionValue, { color: theme.text }]}>{Math.round(recipe.CarbohydrateContent)} g</Text>
         </View>
         <View style={styles.nutritionRow}>
-          <Text style={[styles.nutritionLabel, { color: theme.text }]}>
-            Fat:
-          </Text>
-          <Text style={[styles.nutritionValue, { color: theme.text }]}>
-            {Math.round(recipe.FatContent)} g
-          </Text>
+          <Text style={[styles.nutritionLabel, { color: theme.text }]}>Fat:</Text>
+          <Text style={[styles.nutritionValue, { color: theme.text }]}>{Math.round(recipe.FatContent)} g</Text>
         </View>
-        {/* Add additional nutrients (Fiber, Sugar, etc.) as needed */}
       </View>
 
-      {/* Example "Add to Favorites" or "Share" Button */}
+      {/* Action Buttons */}
       <View style={styles.buttonRow}>
         <TouchableOpacity style={[styles.ctaButton, { backgroundColor: theme.primary }]}>
           <Text style={[styles.ctaText, { color: theme.background }]}>Save to Favorites</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.ctaButton, { backgroundColor: theme.cardBackground }]}>
+        <TouchableOpacity style={[styles.ctaButton, { backgroundColor: theme.background }]}>
           <Text style={[styles.ctaText, { color: theme.text }]}>Share</Text>
         </TouchableOpacity>
       </View>
@@ -170,7 +146,7 @@ export default function SingleRecipePage() {
   );
 }
 
-// Screen/Device width for image sizing
+// Dimensions for the image area
 const { width } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
@@ -182,7 +158,7 @@ const styles = StyleSheet.create({
     height: width * 0.6,
   },
   image: {
-    width: '100%',
+    width: width,
     height: '100%',
   },
   imagePlaceholder: {
@@ -235,6 +211,19 @@ const styles = StyleSheet.create({
   sectionBody: {
     fontSize: 14,
     lineHeight: 20,
+  },
+  instructionStep: {
+    flexDirection: 'row',
+    marginBottom: 8,
+  },
+  instructionNumber: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginRight: 8,
+  },
+  instructionText: {
+    fontSize: 16,
+    flex: 1,
   },
   nutritionRow: {
     flexDirection: 'row',
