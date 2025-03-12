@@ -45,6 +45,17 @@ export default function TabLayout() {
         }}
       />
 
+      {/* Recipes Tab */}
+      <Tabs.Screen 
+        name="recipes"
+        options={{
+          title: 'Oppskrifter',
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="paperplane.fill" color={color} />
+          ),
+        }}
+      />
+
       {/* Profile Tab */}
       <Tabs.Screen
         name="profile"
