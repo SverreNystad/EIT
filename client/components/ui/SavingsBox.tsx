@@ -1,10 +1,11 @@
 import React from 'react';
 import { View, Text, useColorScheme } from 'react-native';
 import Colors, { getTheme } from '@/constants/Colors';
+import { MaterialIcons } from '@expo/vector-icons';
 
 interface SavingsBoxProps {
-  co2Saved: number; // kg
-  moneySaved: number; // kr
+  co2Saved: number;
+  moneySaved: number;
 }
 
 export default function SavingsBox({ co2Saved, moneySaved }: SavingsBoxProps) {
@@ -13,22 +14,47 @@ export default function SavingsBox({ co2Saved, moneySaved }: SavingsBoxProps) {
 
   return (
     <View style={{
-      backgroundColor: theme.primary,
-      paddingVertical: 18,
-      paddingHorizontal: 24,
-      borderRadius: 12,
-      marginBottom: 20,
-      marginTop: 10, // Added spacing from the top
+      backgroundColor: colorScheme === 'dark' ? '#1E1E1E' : '#ead8c0', // ✅ Improved contrast
+      padding: 20,
+      borderRadius: 16,
+      marginBottom: 30,
       alignItems: 'center',
-      shadowColor: theme.text, 
-      shadowOpacity: 0.15,
-      shadowRadius: 4,
-      shadowOffset: { width: 0, height: 2 }
+      shadowColor: '#000',
+      //shadowOpacity: colorScheme === 'dark' ? 0.6 : 0.3, 
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 5,
     }}>
-      <Text style={{ color: '#fff', fontSize: 18, fontWeight: '600' }}>Spart</Text>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginTop: 6 }}>
-        <Text style={{ color: '#fff', fontSize: 14, fontWeight: '400' }}>CO₂ spart: <Text style={{ fontWeight: '600' }}>{co2Saved.toFixed(1)} kg</Text></Text>
-        <Text style={{ color: '#fff', fontSize: 14, fontWeight: '400' }}>Penger spart: <Text style={{ fontWeight: '600' }}>{moneySaved.toFixed(0)} kr</Text></Text>
+      <Text style={{ fontSize: 20, fontWeight: 'bold', color: theme.text, marginBottom: 12 }}>
+        
+      </Text>
+
+      {/* ✅ Improved layout for better contrast */}
+      <View style={{
+        flexDirection: 'row', 
+        justifyContent: 'space-between', 
+        width: '100%',
+        backgroundColor: colorScheme === 'dark' ? '2A2A2A#' : '#FFFFFF',
+        borderRadius: 12,
+        padding: 12,
+      }}>
+        {/* CO₂ Savings */}
+        <View style={{ alignItems: 'center', flex: 1 }}>
+          <MaterialIcons name="cloud" size={24} color={theme.text} />
+          <Text style={{ fontSize: 15, color: theme.text, marginTop: 4 }}>CO₂ spart</Text>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#4cbb17', marginTop: 6 }}>
+            {co2Saved} kg
+          </Text>
+        </View>
+
+        {/* Money Savings */}
+        <View style={{ alignItems: 'center', flex: 1 }}>
+          <MaterialIcons name="attach-money" size={24} color={theme.text} />
+          <Text style={{ fontSize: 15, color: theme.text, marginTop: 4 }}>Penger spart</Text>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#4cbb17', marginTop: 6 }}>
+            {moneySaved} kr
+          </Text>
+        </View>
       </View>
     </View>
   );

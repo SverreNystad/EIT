@@ -17,11 +17,11 @@ export default function Section({ title, data, isOfferSection = false, onSeeMore
   const theme = getTheme(colorScheme);
 
   return (
-    <View style={{ marginBottom: 24 }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <Text style={{ fontSize: 18, fontWeight: '600', color: theme.text }}>{title}</Text>
+    <View style={{ marginBottom: 30 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+        <Text style={{ fontSize: 20, fontWeight: 'bold', color: theme.text }}>{title}</Text>
         <Pressable onPress={onSeeMore}>
-          <Text style={{ fontSize: 15, color: theme.primary }}>Se mer →</Text>
+          <Text style={{ fontSize: 16, color: theme.primary }}>Se mer →</Text>
         </Pressable>
       </View>
 

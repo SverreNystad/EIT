@@ -21,7 +21,7 @@ type HomeStackParamList = {
 type HomeScreenNavigationProp = StackNavigationProp<HomeStackParamList, 'home'>;
 
 export default function HomeScreen() {
-  const navigation = useNavigation<HomeScreenNavigationProp>(); // Correctly typed navigation
+  const navigation = useNavigation<HomeScreenNavigationProp>(); 
   const colorScheme = useColorScheme() as 'light' | 'dark';
   const theme = getTheme(colorScheme);
   
@@ -50,37 +50,36 @@ export default function HomeScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.background }}>
-      <ScrollView 
-        showsVerticalScrollIndicator={false} 
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 30 }}
-      >
-        
-        <View style={{ marginTop: 30 }}>  
-          <SavingsBox co2Saved={co2Saved} moneySaved={moneySaved} />
-        </View>
+    <ScrollView 
+      showsVerticalScrollIndicator={false} 
+      contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
+    >
+      {/* ✅ Redesigned SavingsBox */}
+      <View style={{ marginTop: 50 }}>  
+        <SavingsBox co2Saved={12.3} moneySaved={320} />
+      </View>
 
-        {/* Show Loading Indicator */}
-        {loading ? (
-          <ActivityIndicator size="large" color={theme.primary} style={{ marginTop: 30 }} />
-        ) : (
-          <>
-            {/* "Tilbud for deg" uses OfferCard.tsx for discounts */}
-            <Section 
-              title="Tilbud for deg" 
-              data={products.slice(0, 4)} 
-              isOfferSection={true}
-              onSeeMore={() => navigation.navigate('deals')} 
-            />
+      {loading ? (
+        <ActivityIndicator size="large" color={theme.primary} style={{ marginTop: 40 }} />
+      ) : (
+        <>
+          {/* ✅ Uses OfferCard.tsx for "Tilbud for deg" */}
+          <Section 
+            title="Tilbud for deg" 
+            data={products.slice(0, 4)} 
+            isOfferSection 
+            onSeeMore={() => navigation.navigate('deals')} 
+          />
 
-            {/* "Alle matvarer" uses ProductCard.tsx for general products */}
-            <Section 
-              title="Alle matvarer" 
-              data={products.slice(0, 4)} 
-              onSeeMore={() => navigation.navigate('products')} 
-            />
-          </>
-        )}
-      </ScrollView>
-    </View>
+          {/* ✅ Uses ProductCard.tsx for "Alle matvarer" */}
+          <Section 
+            title="Alle matvarer" 
+            data={products.slice(0, 4)} 
+            onSeeMore={() => navigation.navigate('products')} 
+          />
+        </>
+      )}
+    </ScrollView>
+  </View>
   );
 }
