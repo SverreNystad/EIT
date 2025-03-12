@@ -6,18 +6,19 @@ import {
   FlatList,
   TouchableOpacity,
   StyleSheet,
+  ScrollView,
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useNavigation } from '@react-navigation/native';
 import { useColorScheme } from 'react-native';
 import { getTheme } from '@/constants/Colors';
 import { RecipeStackParamList } from './_layout';
-import { recommendedRecipes } from '@/services/api'; 
+import { recommendedRecipes } from '@/services/api';
 import {
   MealRecommendationRequest,
   RecommendedRecipesResponse,
   MealRecommendationResponse,
-} from '@/types/recipes'; 
+} from '@/types/recipes';
 
 type RecipeRecommendationPageNavProp = StackNavigationProp<
   RecipeStackParamList,
@@ -29,7 +30,10 @@ export default function RecipeRecommendationPage() {
   const colorScheme = useColorScheme() || 'light';
   const theme = getTheme(colorScheme);
 
-  const [recipes, setRecipes] = useState<MealRecommendationResponse[]>([]);
+  // Store the entire response object rather than combining into one array
+  const [mealData, setMealData] = useState<RecommendedRecipesResponse | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,7 +41,7 @@ export default function RecipeRecommendationPage() {
       try {
         setLoading(true);
 
-        // TODO - Replace with actual user data
+        // Example user data (replace with real user input)
         const requestPayload: MealRecommendationRequest = {
           category: 'male',
           body_weight: 70,
@@ -51,15 +55,7 @@ export default function RecipeRecommendationPage() {
         const response: RecommendedRecipesResponse = await recommendedRecipes(
           requestPayload
         );
-
-        // Combine all recipe arrays into one if desired
-        const combined = [
-          ...response.breakfast,
-          ...response.lunch,
-          ...response.dinner,
-          ...response.suggestions,
-        ];
-        setRecipes(combined);
+        setMealData(response);
       } catch (error) {
         console.error('Error loading recipes:', error);
       } finally {
@@ -74,6 +70,49 @@ export default function RecipeRecommendationPage() {
     navigation.navigate('singleRecipe', { recipe });
   };
 
+  /**
+   * Renders a single item (recipe card) for a FlatList.
+   */
+  const renderCard = ({ item }: { item: MealRecommendationResponse }) => (
+    <TouchableOpacity
+      style={[styles.card, { backgroundColor: theme.background }]}
+      onPress={() => handleRecipePress(item)}
+    >
+      {/* If you have a valid image URL in `item.Images`, you can render an Image here */}
+      <Text style={[styles.cardTitle, { color: theme.text }]}>
+        {item.Name}
+      </Text>
+      <Text style={[styles.cardSubtitle, { color: theme.text }]}>
+        {Math.round(item.Calories)} kcal
+      </Text>
+    </TouchableOpacity>
+  );
+
+  /**
+   * Renders a section (e.g., Breakfast, Lunch, Dinner, Suggestions)
+   * with a title and a FlatList of recipes.
+   */
+  const renderMealSection = (
+    title: string,
+    data: MealRecommendationResponse[] | undefined
+  ) => {
+    // If there's no data or an empty array, we skip rendering
+    if (!data || data.length === 0) return null;
+
+    return (
+      <View style={styles.mealSection}>
+        <Text style={[styles.mealTitle, { color: theme.text }]}>{title}</Text>
+        <FlatList
+          data={data}
+          keyExtractor={(item) => item.RecipeId.toString()}
+          renderItem={renderCard}
+          numColumns={2} // 2-column grid for each section
+          contentContainerStyle={styles.mealContentContainer}
+        />
+      </View>
+    );
+  };
+
   if (loading) {
     return (
       <View style={[styles.centered, { backgroundColor: theme.background }]}>
@@ -82,29 +121,25 @@ export default function RecipeRecommendationPage() {
     );
   }
 
-  const renderCard = ({ item }: { item: MealRecommendationResponse }) => (
-    <TouchableOpacity
-      //style={[styles.card, { backgroundColor: theme.cardBackground }]}
-      onPress={() => handleRecipePress(item)}
-    >
-      {/* If you have a valid image URL in `item.Images`, you can render an Image here */}
-      <Text style={[styles.cardTitle, { color: theme.text }]}>{item.Name}</Text>
-      <Text style={[styles.cardSubtitle, { color: theme.text }]}>
-        {Math.round(item.Calories)} kcal
-      </Text>
-    </TouchableOpacity>
-  );
+  // If there is no mealData at this point, there's likely an error or empty response
+  if (!mealData) {
+    return (
+      <View style={[styles.centered, { backgroundColor: theme.background }]}>
+        <Text style={{ color: theme.text }}>No recipes available.</Text>
+      </View>
+    );
+  }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <FlatList
-        data={recipes}
-        keyExtractor={(item) => item.RecipeId.toString()}
-        renderItem={renderCard}
-        numColumns={2} // <-- Grid Layout
-        contentContainerStyle={styles.contentContainer}
-      />
-    </View>
+    <ScrollView
+      style={[styles.container, { backgroundColor: theme.background }]}
+      contentContainerStyle={{ paddingBottom: 20 }}
+    >
+      {renderMealSection('Breakfast', mealData.breakfast)}
+      {renderMealSection('Lunch', mealData.lunch)}
+      {renderMealSection('Dinner', mealData.dinner)}
+      {renderMealSection('Suggestions', mealData.suggestions)}
+    </ScrollView>
   );
 }
 
@@ -112,24 +147,36 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  contentContainer: {
-    padding: 8,
-  },
   centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  mealSection: {
+    marginBottom: 20,
+  },
+  mealTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  mealContentContainer: {
+    paddingHorizontal: 8,
   },
   card: {
     flex: 1,
     margin: 8,
     borderRadius: 8,
     padding: 12,
-    // If you want a shadow/elevation:
+    // Optional elevation for Android
     // elevation: 2,
+    // Optional shadow for iOS
     // shadowColor: '#000',
-    // shadowOpacity: 0.1,
     // shadowOffset: { width: 0, height: 2 },
+    // shadowOpacity: 0.1,
+    // shadowRadius: 4,
   },
   cardTitle: {
     fontWeight: '600',
