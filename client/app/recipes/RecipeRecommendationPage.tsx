@@ -11,14 +11,17 @@ import {
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useNavigation } from '@react-navigation/native';
 import { useColorScheme } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getTheme } from '@/constants/Colors';
 import { RecipeStackParamList } from './_layout';
-import { recommendedRecipes } from '@/services/api';
+import { recommendedRecipes } from '@/services/api'; 
 import {
   MealRecommendationRequest,
   RecommendedRecipesResponse,
   MealRecommendationResponse,
 } from '@/types/recipes';
+
+const PROFILE_STORAGE_KEY = 'userProfileData';
 
 type RecipeRecommendationPageNavProp = StackNavigationProp<
   RecipeStackParamList,
@@ -39,22 +42,51 @@ export default function RecipeRecommendationPage() {
   useEffect(() => {
     const loadRecipes = async () => {
       try {
-        setLoading(true);
+        const storedProfile = await AsyncStorage.getItem(PROFILE_STORAGE_KEY);
 
-        // Example user data (replace with real user input)
-        const requestPayload: MealRecommendationRequest = {
-          category: 'male',
-          body_weight: 70,
-          body_height: 175,
+        let userData: {
+          gender: string;
+          weight: number;
+          height: number;
+          age: number;
+          activity: string;
+          objective: string;
+        } = {
+          // Default fallback values if nothing is stored
+          gender: 'male',
+          weight: 70,
+          height: 175,
           age: 25,
-          activity_intensity: 'sedentary',
+          activity: 'sedentary',
           objective: 'weight_loss',
         };
 
-        // Fetch recommended recipes from your backend
+        if (storedProfile) {
+          const parsed = JSON.parse(storedProfile);
+          userData = {
+            gender: parsed.gender || 'male',
+            weight: parsed.weight || 70,
+            height: parsed.height || 175,
+            age: parsed.age || 25,
+            activity: parsed.activity || 'sedentary',
+            objective: parsed.objective || 'weight_loss',
+          };
+        }
+
+        const requestPayload: MealRecommendationRequest = {
+          category: userData.gender as 'male' | 'female',
+          body_weight: userData.weight,
+          body_height: userData.height,
+          age: userData.age,
+          activity_intensity: userData.activity as MealRecommendationRequest['activity_intensity'],
+          objective: userData.objective as MealRecommendationRequest['objective'],
+        };
+
         const response: RecommendedRecipesResponse = await recommendedRecipes(
           requestPayload
         );
+
+        
         setMealData(response);
       } catch (error) {
         console.error('Error loading recipes:', error);
