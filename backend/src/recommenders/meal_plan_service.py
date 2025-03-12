@@ -127,9 +127,10 @@ def suggest_recipes(
 
     # Retrieve recommended recipes based on the highest prediction
     similar_recipe_indices = np.array(recommendations_dict[top_prediction_index])
-    recommended_recipes = data.iloc[similar_recipe_indices[:, 1].astype(int)][
-        ["Name", "Calories"]
-    ]
+    recommended_recipes = data.iloc[similar_recipe_indices[:, 1].astype(int)]
+    #recommended_recipes = data.iloc[similar_recipe_indices[:, 1].astype(int)][
+    #    ["RecipeId","Name", "Calories"]
+    #]
 
     return recommended_recipes.head(suggestions)
 

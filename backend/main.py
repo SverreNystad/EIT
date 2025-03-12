@@ -1,9 +1,7 @@
 from typing import Optional, Union
-from enum import Enum
 
 import pandas as pd
-from pydantic import BaseModel, Field
-from fastapi import FastAPI, HTTPException, Query, Path, Request
+from fastapi import FastAPI, HTTPException, Query, Path
 from fastapi.middleware.cors import CORSMiddleware
 from src.configuration import KASSAL_API_KEY
 from src.kassal.kassal_service import KassalAPI
@@ -12,6 +10,7 @@ from src.kassal.models_products import ProductsResponse, Product
 from src.kassal.models_products_ean import ProductsByEanData
 from src.kassal.models_products_compare import ProductsCompareData
 from src.recommenders.meal_plan_service import generate_meal_plan, suggest_recipes
+from src.recommenders.models import MealRecommendationRequest, _transform_df_to_pydantic
 
 
 app = FastAPI(
@@ -153,35 +152,6 @@ async def find_product_by_url_compare(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-class GenderEnum(str, Enum):
-    male = "male"
-    female = "female"
-
-class ActivityIntensityEnum(str, Enum):
-    sedentary = "sedentary"
-    lightly_active = "lightly_active"
-    moderately_active = "moderately_active"
-    very_active = "very_active"
-    extra_active = "extra_active"
-
-class ObjectiveEnum(str, Enum):
-    weight_loss = "weight_loss"
-    muscle_gain = "muscle_gain"
-    health_maintenance = "health_maintenance"
-
-class MealRecommendationRequest(BaseModel):
-    category: GenderEnum
-    body_weight: float
-    body_height: float
-    age: int = Field(..., gt=0, description="Age must be greater than 0")
-    activity_intensity: ActivityIntensityEnum
-    objective: ObjectiveEnum
-    tolerance: int = Field(50, gt=0, description="Tolerance must be greater than 0")
-    suggestions: int = Field(5, gt=0, description="Suggestions must be greater than 0")
-
-
-
-
 @app.post("/recipes/recommend")
 async def recommend_recipes(request: MealRecommendationRequest):
     category = request.category.value
@@ -191,7 +161,7 @@ async def recommend_recipes(request: MealRecommendationRequest):
     activity_intensity = request.activity_intensity.value
     objective = request.objective.value
     tolerance = request.tolerance
-    suggestions = request.suggestions
+    num_suggestions = request.suggestions
 
     recipes_df = pd.read_csv("data/recipes.csv")
     breakfast_options, lunch_options, dinner_options = generate_meal_plan(
@@ -213,8 +183,18 @@ async def recommend_recipes(request: MealRecommendationRequest):
         activity_intensity,
         objective,
         recipes_df,
-        suggestions,
+        num_suggestions,
     )
+
+    # Ensure that the options are not longer than the number of suggestions
+    breakfast_options = breakfast_options.head(num_suggestions)
+    lunch_options = lunch_options.head(num_suggestions)
+    dinner_options = dinner_options.head(num_suggestions)
+
+    breakfast_options = _transform_df_to_pydantic(breakfast_options)
+    lunch_options = _transform_df_to_pydantic(lunch_options)
+    dinner_options = _transform_df_to_pydantic(dinner_options)
+    suggestions = _transform_df_to_pydantic(suggestions)
 
     return {
         "breakfast": breakfast_options,
