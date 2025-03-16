@@ -1,15 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { View, ActivityIndicator, ScrollView } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import React, { useState } from 'react';
+import { View, Text, FlatList, TouchableOpacity } from 'react-native';
+import { useTheme, useNavigation } from '@react-navigation/native';
+import { useCart } from '@/context/ShoppingListContext';
+import { AntDesign } from '@expo/vector-icons';
+import { Product } from '@/types/kassal';
 import { StackNavigationProp } from '@react-navigation/stack';
 
-import { useColorScheme } from 'react-native';
-import Colors, { getTheme } from '@/constants/Colors';
-import { getProducts } from '@/services/api'; 
-import SavingsBox from '@/components/ui/SavingsBox';
-import Section from '@/components/ui/Section';
-import { Product, ProductsResponse } from '@/types/kassal';
-
+// Define navigation stack
 type HomeStackParamList = {
   home: undefined;
   deals: undefined;
@@ -17,74 +14,163 @@ type HomeStackParamList = {
   singleProduct: { product: Product };
 };
 
-type HomeScreenNavigationProp = StackNavigationProp<HomeStackParamList, 'home'>;
+// Navigation typing
+type NavigationProp = StackNavigationProp<HomeStackParamList, 'singleProduct'>;
 
 export default function HomeScreen() {
-  const navigation = useNavigation<HomeScreenNavigationProp>(); 
-  const colorScheme = useColorScheme() as 'light' | 'dark';
-  const theme = getTheme(colorScheme);
+  const { colors } = useTheme();
+  const { cart, addToCart, removeFromCart, clearCart } = useCart();
+  const [completedItems, setCompletedItems] = useState<string[]>([]);
+  const navigation = useNavigation<NavigationProp>();
 
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Toggle checkbox state
+  const toggleItem = (productId: string) => {
+    setCompletedItems((prev) =>
+      prev.includes(productId) ? prev.filter(id => id !== productId) : [...prev, productId]
+    );
+  };
 
-  // TODO Fake savings data
-  const co2Saved = 12.3;
-  const moneySaved = 320;
-
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        const productsData: ProductsResponse = await getProducts({ size: 10 });
-        setProducts(productsData.data);
-      } catch (error) {
-        console.error('Failed to load data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadData();
-  }, []);
-
+  // Navigate to product details page
   const handlePressProduct = (product: Product) => {
     navigation.navigate('singleProduct', { product });
   };
 
+  // ✅ Fully clears shopping cart
+  const handleClearCart = () => {
+    clearCart();
+  };
+
+  // Group items by store
+  const groupedCart = cart.reduce((acc, item) => {
+    const storeName = item.product.store?.name || 'Ukjent Butikk';
+    if (!acc[storeName]) acc[storeName] = [];
+    acc[storeName].push(item);
+    return acc;
+  }, {} as Record<string, typeof cart>);
+
   return (
-    <View style={{ flex: 1, backgroundColor: theme.background }}>
-    <ScrollView 
-      showsVerticalScrollIndicator={false} 
-      contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
-    >
-      {/* ✅ Redesigned SavingsBox */}
-      <View style={{ marginTop: 50 }}>  
-        <SavingsBox co2Saved={12.3} moneySaved={320} />
-      </View>
+    <View style={{ flex: 1, padding: 16, backgroundColor: colors.background, paddingTop: 40 }}>
+      <Text style={{ fontSize: 22, fontWeight: 'bold', color: colors.text, marginBottom: 16 }}>
+        Handleliste
+      </Text>
 
-      {loading ? (
-        <ActivityIndicator size="large" color={theme.primary} style={{ marginTop: 40 }} />
+      {Object.keys(groupedCart).length === 0 ? (
+        <Text style={{ color: colors.text, textAlign: 'center', marginTop: 20 }}>
+          Ingen produkter i handlelisten.
+        </Text>
       ) : (
-        <>
-          {/* ✅ Uses OfferCard.tsx for "Tilbud for deg" */}
-          <Section 
-            title="Tilbud for deg" 
-            data={products.slice(0, 4)} 
-            isOfferSection 
-            onSeeMore={() => navigation.navigate('deals')} 
-            productClick={handlePressProduct}
-          />
+        <FlatList
+          data={Object.entries(groupedCart)}
+          keyExtractor={([store]) => store}
+          renderItem={({ item }) => {
+            const [store, items] = item;
 
-          {/* ✅ Uses ProductCard.tsx for "Alle matvarer" */}
-          <Section 
-            title="Alle matvarer" 
-            data={products.slice(0, 4)} 
-            onSeeMore={() => navigation.navigate('products')} 
-            productClick={handlePressProduct}
-          />
-        </>
+            return (
+              <View key={store} style={{ marginBottom: 20 }}>
+                <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text, marginBottom: 10 }}>
+                  {store}
+                </Text>
+
+                {items.map((item) => (
+                  <View 
+                    key={item.product.id.toString()}
+                    style={{
+                      padding: 12, 
+                      backgroundColor: colors.card, 
+                      borderRadius: 10, 
+                      marginBottom: 8,
+                    }}
+                  >
+                    {/* ✅ First Row: Checkbox + Product Name (Clickable) */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <TouchableOpacity 
+                        onPress={() => toggleItem(item.product.id.toString())} 
+                        style={{
+                          width: 24,
+                          height: 24,
+                          borderRadius: 6,
+                          borderWidth: 2,
+                          borderColor: completedItems.includes(item.product.id.toString()) ? '#4CAF50' : 'gray',
+                          backgroundColor: completedItems.includes(item.product.id.toString()) ? '#A5D6A7' : 'transparent',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          marginRight: 10,
+                        }}
+                      >
+                        {completedItems.includes(item.product.id.toString()) && (
+                          <AntDesign name="check" size={16} color="white" />
+                        )}
+                      </TouchableOpacity>
+
+                      <TouchableOpacity onPress={() => handlePressProduct(item.product)}>
+                        <Text style={{ 
+                          color: colors.text, 
+                          fontSize: 16, 
+                          textDecorationLine: completedItems.includes(item.product.id.toString()) ? 'line-through' : 'none',
+                        }}>
+                          {item.product.name}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* ✅ Second Row: Price + Quantity Selector */}
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
+                      {/* Product Price */}
+                      <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold' }}>
+                        {item.product.current_price} kr
+                      </Text>
+
+                      {/* Quantity Selector (Styled like Image) */}
+                      <View 
+                        style={{
+                          flexDirection: 'row', 
+                          alignItems: 'center', 
+                          borderWidth: 1, 
+                          borderColor: colors.text, 
+                          borderRadius: 8, 
+                          paddingHorizontal: 12, 
+                          paddingVertical: 4,
+                        }}
+                      >
+                        <TouchableOpacity onPress={() => removeFromCart(item.product.id.toString())}>
+                          <AntDesign name="minus" size={18} color={colors.text} />
+                        </TouchableOpacity>
+
+                        <Text style={{ fontSize: 16, fontWeight: 'bold', color: colors.text, marginHorizontal: 12 }}>
+                          {item.quantity}
+                        </Text>
+
+                        <TouchableOpacity onPress={() => addToCart(item.product)}>
+                          <AntDesign name="plus" size={18} color={colors.text} />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            );
+          }}
+        />
       )}
-    </ScrollView>
-  </View>
+
+      {/* ✅ Fixed "Tøm Handleliste" (Removes All Items) */}
+      {cart.length > 0 && (
+        <TouchableOpacity 
+          onPress={handleClearCart} 
+          style={{
+            backgroundColor: '#D72638', 
+            padding: 14, 
+            borderRadius: 10, 
+            alignItems: 'center',
+            flexDirection: 'row',
+            justifyContent: 'center',
+            marginTop: 20,
+          }}
+        >
+          <AntDesign name="delete" size={20} color="white" style={{ marginRight: 8 }} />
+          <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>Tøm Handleliste</Text>
+        </TouchableOpacity>
+      )}
+    </View>
   );
 }

@@ -3,6 +3,9 @@ import { View, Text, Button, Linking, useColorScheme } from 'react-native';
 import Head from 'expo-router/head';
 import { getTheme } from '../constants/Colors'; // ✅ Use theme helper
 
+
+
+
 export default function WebApp() {
   const colorScheme = useColorScheme(); // Detects system theme
   const theme = getTheme(colorScheme); // ✅ Always returns a valid theme
@@ -41,6 +44,11 @@ export default function WebApp() {
           onPress={() => Linking.openURL('https://play.google.com')} 
         />
       </View>
+
+      
     </View>
+
+
   );
 }
+

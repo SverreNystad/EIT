@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, FlatList, Pressable, useColorScheme } from 'react-native';
+import { View, Text, FlatList, Pressable, useColorScheme, Animated } from 'react-native';
 import Colors, { getTheme } from '@/constants/Colors';
 import ProductCard from '@/components/ui/ProductCard';
 import OfferCard from '@/components/ui/OfferCard';
@@ -11,9 +11,10 @@ interface SectionProps {
   isOfferSection?: boolean;
   onSeeMore: () => void;
   productClick: (product: Product) => void;
+ 
 }
 
-export default function Section({ title, data, isOfferSection = false, onSeeMore, productClick }: SectionProps) {
+export default function Section({ title, data, isOfferSection = false, onSeeMore, productClick}: SectionProps) {
   const colorScheme = useColorScheme();
   const theme = getTheme(colorScheme);
 
@@ -33,7 +34,7 @@ export default function Section({ title, data, isOfferSection = false, onSeeMore
         showsHorizontalScrollIndicator={false}
         renderItem={({ item }) => (
           <Pressable onPress={() => productClick(item)}>
-            {isOfferSection ? <OfferCard product={item} /> : <ProductCard product={item} />}
+            {isOfferSection ? <OfferCard product={item}/> : <ProductCard product={item}/>}
           </Pressable>
         )}
       />

@@ -5,6 +5,7 @@ import { ThemeProvider, Theme } from '@react-navigation/native';
 import Colors from '../constants/Colors'; 
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { CartProvider } from '@/context/ShoppingListContext';
 
 /**
  * Custom hook to create a theme object for React Navigation.
@@ -41,6 +42,7 @@ export default function RootLayout() {
   }
 
   return (
+    <CartProvider> 
     <ThemeProvider value={theme}>
       <Stack>
         <Stack.Screen name="index" options={{ headerShown: false }} />
@@ -49,5 +51,6 @@ export default function RootLayout() {
       </Stack>
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
     </ThemeProvider>
+    </CartProvider>
   );
 }
