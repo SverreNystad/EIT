@@ -6,7 +6,7 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme() as 'light' | 'dark';
-  const theme = getTheme(colorScheme); // ✅ Use getTheme() for consistency
+  const theme = getTheme(colorScheme); 
 
   return (
     <Tabs
@@ -16,8 +16,8 @@ export default function TabLayout() {
         tabBarInactiveTintColor: theme.text,
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: theme.background, // ✅ Ensures proper dark mode handling
-          borderTopColor: theme.card, // ✅ Keeps design consistent
+          backgroundColor: theme.background, 
+          borderTopColor: theme.card, 
           height: 60,
           paddingBottom: Platform.OS === 'ios' ? 10 : 5,
         },

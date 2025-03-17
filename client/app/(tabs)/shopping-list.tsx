@@ -1,50 +1,32 @@
 import React, { useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity } from 'react-native';
-import { useTheme, useNavigation } from '@react-navigation/native';
+import { View, Text, FlatList, TouchableOpacity, useColorScheme } from 'react-native';
+import Colors from '@/constants/Colors';
 import { useCart } from '@/context/ShoppingListContext';
 import { AntDesign } from '@expo/vector-icons';
 import { Product } from '@/types/kassal';
-import { StackNavigationProp } from '@react-navigation/stack';
 
-// Define navigation stack
-type HomeStackParamList = {
-  singleProduct: { product: Product };
-};
-
-// Navigation typing
-type NavigationProp = StackNavigationProp<HomeStackParamList, 'singleProduct'>;
-
-export default function TabTwoScreen() {
-  const { colors } = useTheme();
+export default function ShoppingListTab() {
+  const colorScheme = useColorScheme() ?? 'light';
+  const theme = Colors[colorScheme] || Colors.light;
   const { cart, addToCart, removeFromCart, clearCart } = useCart();
   const [completedItems, setCompletedItems] = useState<string[]>([]);
-  const navigation = useNavigation<NavigationProp>();
 
-  // ✅ Navigate to product details page
-  const handlePressProduct = (product: Product) => {
-    navigation.navigate('singleProduct', { product });
-  };
-
-  // ✅ Toggle checkbox state
   const toggleItem = (productId: string) => {
     setCompletedItems((prev) =>
       prev.includes(productId) ? prev.filter(id => id !== productId) : [...prev, productId]
     );
   };
 
-  // ✅ Remove item from cart AND reset its checkbox state
   const handleRemoveFromCart = (productId: string) => {
-    setCompletedItems((prev) => prev.filter(id => id !== productId)); // ✅ Uncheck item on remove
+    setCompletedItems((prev) => prev.filter(id => id !== productId));
     removeFromCart(productId);
   };
 
-  // ✅ Fully clears shopping cart and resets checkbox states
   const handleClearCart = () => {
-    setCompletedItems([]); // ✅ Reset all checkboxes
+    setCompletedItems([]);
     clearCart();
   };
 
-  // ✅ Group items by store
   const groupedCart = cart.reduce((acc, item) => {
     const storeName = item.product.store?.name || 'Ukjent Butikk';
     if (!acc[storeName]) acc[storeName] = [];
@@ -53,13 +35,13 @@ export default function TabTwoScreen() {
   }, {} as Record<string, typeof cart>);
 
   return (
-    <View style={{ flex: 1, padding: 16, backgroundColor: colors.background, paddingTop: 40 }}>
-      <Text style={{ fontSize: 22, fontWeight: 'bold', color: colors.text, marginBottom: 16 }}>
+    <View style={{ flex: 1, padding: 16, backgroundColor: theme.background, paddingTop: 40 }}>
+      <Text style={{ fontSize: 22, fontWeight: 'bold', color: theme.text, marginBottom: 16 }}>
         Handleliste
       </Text>
 
       {Object.keys(groupedCart).length === 0 ? (
-        <Text style={{ color: colors.text, textAlign: 'center', marginTop: 20 }}>
+        <Text style={{ color: theme.text, textAlign: 'center', marginTop: 20 }}>
           Ingen produkter i handlelisten.
         </Text>
       ) : (
@@ -71,7 +53,7 @@ export default function TabTwoScreen() {
 
             return (
               <View key={store} style={{ marginBottom: 20 }}>
-                <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text, marginBottom: 10 }}>
+                <Text style={{ fontSize: 18, fontWeight: 'bold', color: theme.text, marginBottom: 10 }}>
                   {store}
                 </Text>
 
@@ -82,25 +64,24 @@ export default function TabTwoScreen() {
                     <View 
                       key={item.product.id.toString()}
                       style={{
-                        backgroundColor: colors.card, 
-                        borderRadius: 12, 
-                        padding: 12, 
+                        backgroundColor: theme.card, 
+                        borderRadius: 16, 
+                        padding: 16, 
                         marginBottom: 12,
                         shadowColor: '#000',
                         shadowOpacity: 0.1,
-                        shadowRadius: 6,
-                        shadowOffset: { width: 0, height: 3 },
-                        elevation: 4,
+                        shadowRadius: 4,
+                        shadowOffset: { width: 0, height: 2 },
+                        elevation: 3,
                       }}
                     >
-                      {/* ✅ First Row: Checkbox + Product Name */}
+                      {/* Checkbox + Product Name */}
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                        {/* Checkbox */}
                         <TouchableOpacity 
                           onPress={() => toggleItem(item.product.id.toString())} 
                           style={{
-                            width: 24,
-                            height: 24,
+                            width: 26,
+                            height: 26,
                             borderRadius: 6,
                             borderWidth: 2,
                             borderColor: completedItems.includes(item.product.id.toString()) ? '#4CAF50' : 'gray',
@@ -110,59 +91,55 @@ export default function TabTwoScreen() {
                           }}
                         >
                           {completedItems.includes(item.product.id.toString()) && (
-                            <AntDesign name="check" size={16} color="white" />
+                            <AntDesign name="check" size={18} color="white" />
                           )}
                         </TouchableOpacity>
 
-                        {/* ✅ Clickable Product Name */}
-                        <TouchableOpacity 
-                          onPress={() => handlePressProduct(item.product)}
-                          style={{ flex: 1, marginLeft: 10 }}
-                        >
-                          <Text style={{ 
-                            color: colors.text, 
-                            fontSize: 16, 
-                            fontWeight: 'bold',
-                            textDecorationLine: completedItems.includes(item.product.id.toString()) ? 'line-through' : 'none',
-                          }}>
-                            {item.product.name}
-                          </Text>
-                        </TouchableOpacity>
+                        <Text style={{ 
+                          flex: 1,
+                          marginLeft: 12,
+                          color: theme.text, 
+                          fontSize: 16, 
+                          fontWeight: 'bold',
+                          textDecorationLine: completedItems.includes(item.product.id.toString()) ? 'line-through' : 'none',
+                        }}>
+                          {item.product.name}
+                        </Text>
                       </View>
 
-                      {/* ✅ Second Row: Quantity Selector */}
-                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
-                        {/* Quantity Selector (Centered below name) */}
+                      {/* Quantity Selector */}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
                         <View 
                           style={{
                             flexDirection: 'row', 
                             alignItems: 'center', 
-                            borderWidth: 1, 
-                            borderColor: colors.text, 
-                            borderRadius: 8, 
-                            paddingHorizontal: 12, 
+                            borderWidth: 2, 
+                            borderColor: theme.primary, 
+                            borderRadius: 10, 
+                            paddingHorizontal: 10, 
                             paddingVertical: 4,
+                            marginLeft:40
                           }}
                         >
                           <TouchableOpacity onPress={() => handleRemoveFromCart(item.product.id.toString())}>
-                            <AntDesign name="minus" size={18} color={colors.text} />
+                            <AntDesign name="minus" size={19} color={theme.primary} />
                           </TouchableOpacity>
 
-                          <Text style={{ fontSize: 16, fontWeight: 'bold', color: colors.text, marginHorizontal: 12 }}>
+                          <Text style={{ fontSize: 13, fontWeight: 'bold', color: theme.primary, marginHorizontal: 12 }}>
                             {item.quantity}
                           </Text>
 
                           <TouchableOpacity onPress={() => addToCart(item.product)}>
-                            <AntDesign name="plus" size={18} color={colors.text} />
+                            <AntDesign name="plus" size={19} color={theme.primary} />
                           </TouchableOpacity>
                         </View>
 
-                        {/* ✅ Price Section (Total Price Bold) */}
+                        {/* Price Section */}
                         <View>
-                          <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold', textAlign: 'right' }}>
+                          <Text style={{ color: theme.text, fontSize: 16, fontWeight: 'bold', textAlign: 'right' }}>
                             {totalPrice} kr
                           </Text>
-                          <Text style={{ color: colors.text, fontSize: 13, opacity: 0.6, textAlign: 'right' }}>
+                          <Text style={{ color: theme.text, fontSize: 13, opacity: 0.6, textAlign: 'right' }}>
                             ({item.product.current_price} kr/stk)
                           </Text>
                         </View>
@@ -176,21 +153,21 @@ export default function TabTwoScreen() {
         />
       )}
 
-      {/* ✅ Fixed "Tøm Handleliste" (Removes All Items and Unchecks Everything) */}
+      {/* "Tøm Handleliste" */}
       {cart.length > 0 && (
         <TouchableOpacity 
           onPress={handleClearCart} 
           style={{
             backgroundColor: '#D72638', 
-            padding: 14, 
-            borderRadius: 10, 
+            padding: 16, 
+            borderRadius: 12, 
             alignItems: 'center',
             flexDirection: 'row',
             justifyContent: 'center',
             marginTop: 20,
           }}
         >
-          <AntDesign name="delete" size={20} color="white" style={{ marginRight: 8 }} />
+          <AntDesign name="delete" size={22} color="white" style={{ marginRight: 10 }} />
           <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>Tøm Handleliste</Text>
         </TouchableOpacity>
       )}

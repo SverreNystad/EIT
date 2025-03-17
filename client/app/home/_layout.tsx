@@ -23,26 +23,24 @@ export default function HomeStackLayout() {
       }}
     >
       <Stack.Screen 
-        name="home" 
+        name="hjem" 
         component={HomeScreen} 
         options={{ headerShown: false }} 
       />
       <Stack.Screen 
-        name="deals" 
+        name="tilbud" 
         component={DealsScreen} 
-        options={{ title: 'Tilbud' }} 
+        options={{ title: 'Tilbud for deg', headerBackTitle: 'Tilbake', headerShown: true }} 
       />
       <Stack.Screen 
-        name="products" 
+        name="produkter" 
         component={ProductScreen} 
-        options={{ title: 'Alle matvarer' }} 
+        options={{ title: 'Alle matvarer', headerBackTitle: 'Tilbake', headerShown: true }} 
       />
-
-      {/* New route for a single product view */}
       <Stack.Screen
-        name="singleProduct"
+        name="produkt"
         component={SingleProduct}
-        options={{ title: 'Product Details' }}
+        options={{ title: 'Produkt detaljer', headerBackTitle: 'Tilbake', headerShown: true }}
       />
     </Stack.Navigator>
   );

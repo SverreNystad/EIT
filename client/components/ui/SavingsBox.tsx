@@ -32,9 +32,9 @@ interface SavingsBoxProps {
         <View style={{ 
             flexDirection: 'row', 
             justifyContent: 'space-between', 
-            alignItems: 'center',  // Ensures everything stays in the middle
+            alignItems: 'center',  
             width: '100%', 
-            flexWrap: 'wrap', // Prevents text from getting cut off
+            flexWrap: 'wrap', 
             }}>
             {/* CO₂ Savings */}
             <View style={{ alignItems: 'center', flex: 1 }}>

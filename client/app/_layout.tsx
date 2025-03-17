@@ -36,7 +36,7 @@ export default function RootLayout() {
   const theme = useCustomTheme(colorScheme);
   const pathname = usePathname(); // Get current route
 
-  // 🚀 Ensure web users stay on `/` and hide the header
+  // ensures web users stay on `/` and hide the header 
   if (Platform.OS === 'web' && pathname !== '/' && pathname !== '/index') {
     return <Redirect href="/" />;
   }

@@ -12,16 +12,15 @@ interface ProductCardProps {
 export default function ProductCard({ product }: ProductCardProps) {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme] || Colors.light;
-  const { addToCart, cart } = useCart();
-
+  const { addToCart, removeFromCart, cart } = useCart();
   const cartItem = cart.find((item) => item.product.id.toString() === product.id.toString());
   const quantity = cartItem ? cartItem.quantity : 0;
-
+  
   return (
     <View style={{
-      width: 220,
-      backgroundColor: theme.card,
-      borderRadius: 16,
+      width: 230, 
+      backgroundColor: theme.card, 
+      borderRadius: 16, 
       overflow: 'hidden',
       marginRight: 16,
       paddingBottom: 10,
@@ -31,12 +30,14 @@ export default function ProductCard({ product }: ProductCardProps) {
       shadowOffset: { width: 0, height: 4 },
       elevation: 3,
     }}>
+      {/* Product Image */}
       <Image 
         source={{ uri: product.image }} 
         style={{ width: '100%', height: 140, borderTopLeftRadius: 16, borderTopRightRadius: 16 }} 
         resizeMode="cover"
       />
 
+      {/* Product Details */}
       <View style={{ paddingHorizontal: 12, paddingTop: 8 }}>
         <Text numberOfLines={1} ellipsizeMode="tail" style={{ fontSize: 15, fontWeight: '600', color: theme.text }}>
           {product.name}
@@ -45,31 +46,47 @@ export default function ProductCard({ product }: ProductCardProps) {
           {product.store?.name}
         </Text>
 
+        {/* Price & Add-to-Cart Section */}
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
           <Text style={{ fontSize: 16, fontWeight: 'bold', color: theme.accent }}>
             {product.current_price} kr
           </Text>
 
-          {/* ✅ Add to Cart Button */}
-          <TouchableOpacity 
-            onPress={() => addToCart(product)} 
-            style={{ backgroundColor: theme.primary, borderRadius: 20, padding: 6 }}
-          >
-            <AntDesign name="plus" size={18} color="white" />
-          </TouchableOpacity>
-
-          {/* ✅ Show quantity if added */}
-          {quantity > 0 && (
-            <View style={{
-              backgroundColor: '#4CAF50',
-              borderRadius: 12,
-              paddingHorizontal: 8,
-              paddingVertical: 2,
-              marginLeft: 8,
+          {/* Add/Remove Quantity Section */}
+          {quantity === 0 ? (
+            <TouchableOpacity 
+              onPress={() => addToCart(product)} 
+              style={{ 
+                backgroundColor: theme.primary, 
+                borderRadius: 18, 
+                width: 30, height: 30, 
+                alignItems: 'center', 
+                justifyContent: 'center' 
+              }}
+            >
+              <AntDesign name="plus" size={20} color="white" />
+            </TouchableOpacity>
+          ) : (
+            <View style={{ 
+              flexDirection: 'row', 
+              alignItems: 'center', 
+              borderWidth: 2, 
+              borderColor: theme.primary, 
+              borderRadius: 10, 
+              paddingHorizontal: 10, 
+              paddingVertical: 4,
             }}>
-              <Text style={{ color: 'white', fontSize: 14, fontWeight: 'bold' }}>
+              <TouchableOpacity onPress={() => removeFromCart(product.id.toString())}>
+                <AntDesign name="minus" size={19} color={theme.primary} />
+              </TouchableOpacity>
+
+              <Text style={{ fontSize: 13, fontWeight: 'bold', color: theme.primary, marginHorizontal: 12 }}>
                 {quantity}
               </Text>
+
+              <TouchableOpacity onPress={() => addToCart(product)}>
+                <AntDesign name="plus" size={19} color={theme.primary} />
+              </TouchableOpacity>
             </View>
           )}
         </View>
