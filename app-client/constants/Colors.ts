@@ -9,8 +9,8 @@ const Colors: Record<'light' | 'dark', { background: string; text: string; prima
   dark: {
     background: '#121417', // Darker charcoal for depth
     text: '#F5F5F5', // Softer off-white for better readability
-    primary: '#C19A6B', // Muted gold for a professional touch
-    accent: '#6BBF59', // Softer, premium green instead of harsh neon
+    primary: '#a52a2a', // Muted gold for a professional touch
+    accent: '#009e60', // Softer, premium green instead of harsh neon
     card: '#1B1D22', // Slightly lighter dark shade for layered elements
   },
   };
