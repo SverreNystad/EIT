@@ -1,4 +1,4 @@
-const API_BASE_URL =  "http://10.22.234.132:8000";
+const API_BASE_URL =  "https://backend.techtaitans.com";
 
 console.log("API_BASE_URL", API_BASE_URL);
 // $ npm install -D react-native-dotenv
