@@ -49,6 +49,14 @@ export default function ProductList({ isOfferPage, onProductPress }: ProductList
   const [tempSelectedBrands, setTempSelectedBrands] = useState<string[]>([]);
   const [tempSelectedAllergens, setTempSelectedAllergens] = useState<string[]>([]);
 
+  // State for "see more" toggles for each category
+  const [showAllStores, setShowAllStores] = useState(false);
+  const [showAllBrands, setShowAllBrands] = useState(false);
+  const [showAllAllergens, setShowAllAllergens] = useState(false);
+
+  // Number of items to show when collapsed
+  const filterLimit = 4;
+
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -284,36 +292,68 @@ export default function ProductList({ isOfferPage, onProductPress }: ProductList
                 },
               ]}
             >
-              <Ionicons
-                name="trash-outline"
-                size={16}
-                color={theme.primary}
-              />
+              <Ionicons name="trash-outline" size={16} color={theme.primary} />
               <Text style={{ color: theme.primary, marginLeft: 6 }}>
                 Fjern alle
               </Text>
             </TouchableOpacity>
 
             <ScrollView style={{ maxHeight: "70%", marginTop: 10 }}>
+              {/* Butikker */}
               <Text style={[styles.modalSubtitle, { color: theme.text }]}>
                 Butikker
               </Text>
               <View style={styles.checkboxContainer}>
-                {renderFilterCheckboxes(storeList, tempSelectedStores, toggleTempStore)}
+                {renderFilterCheckboxes(
+                  showAllStores ? storeList : storeList.slice(0, filterLimit),
+                  tempSelectedStores,
+                  toggleTempStore
+                )}
+                {storeList.length > filterLimit && (
+                  <TouchableOpacity onPress={() => setShowAllStores(!showAllStores)}>
+                    <Text style={{ color: theme.primary, marginTop: 4 }}>
+                      {showAllStores ? "Vis mindre" : "Vis mer"}
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
 
+              {/* Merker */}
               <Text style={[styles.modalSubtitle, { color: theme.text }]}>
                 Merker
               </Text>
               <View style={styles.checkboxContainer}>
-                {renderFilterCheckboxes(brandList, tempSelectedBrands, toggleTempBrand)}
+                {renderFilterCheckboxes(
+                  showAllBrands ? brandList : brandList.slice(0, filterLimit),
+                  tempSelectedBrands,
+                  toggleTempBrand
+                )}
+                {brandList.length > filterLimit && (
+                  <TouchableOpacity onPress={() => setShowAllBrands(!showAllBrands)}>
+                    <Text style={{ color: theme.primary, marginTop: 4 }}>
+                      {showAllBrands ? "Vis mindre" : "Vis mer"}
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
 
+              {/* Allergener */}
               <Text style={[styles.modalSubtitle, { color: theme.text }]}>
                 Allergener
               </Text>
               <View style={styles.checkboxContainer}>
-                {renderFilterCheckboxes(allergenList, tempSelectedAllergens, toggleTempAllergen)}
+                {renderFilterCheckboxes(
+                  showAllAllergens ? allergenList : allergenList.slice(0, filterLimit),
+                  tempSelectedAllergens,
+                  toggleTempAllergen
+                )}
+                {allergenList.length > filterLimit && (
+                  <TouchableOpacity onPress={() => setShowAllAllergens(!showAllAllergens)}>
+                    <Text style={{ color: theme.primary, marginTop: 4 }}>
+                      {showAllAllergens ? "Vis mindre" : "Vis mer"}
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
             </ScrollView>
 
