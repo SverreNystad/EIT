@@ -1,10 +1,10 @@
 const Colors: Record<'light' | 'dark', { background: string; text: string; primary: string; accent: string; card: string }> = {
   light: {
-    background: '#f3f3f3', 
-    text: '#1E1E1E',
-    primary: '#A31D1D', //+ knapper
-    accent: '#1E1E1E',  //spareprisen
-    card: '#ffffff',  
+    background: '#f8f5e1', 
+    text: '#121417',
+    primary: '#a52a2a', //+ knapper
+    accent: '#009e60',  //spareprisen
+    card: '#ffffff',  //f3f3f3
   },
   dark: {
     background: '#121417', // Darker charcoal for depth

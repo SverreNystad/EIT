@@ -40,7 +40,7 @@ interface SavingsBoxProps {
             <View style={{ alignItems: 'center', flex: 1 }}>
                 <MaterialIcons name="cloud" size={24} color={theme.text} />
                 <Text style={{ fontSize: 15, color: theme.text, marginTop: 4 }}>CO₂ spart</Text>
-                <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#4cbb17', marginTop: 4 }}>
+                <Text style={{ fontSize: 18, fontWeight: 'bold', color: theme.accent, marginTop: 4 }}>
                 {co2Saved} kg
                 </Text>
             </View>
@@ -49,7 +49,7 @@ interface SavingsBoxProps {
             <View style={{ alignItems: 'center', flex: 1 }}>
                 <MaterialIcons name="attach-money" size={24} color={theme.text} />
                 <Text style={{ fontSize: 15, color: theme.text, marginTop: 4 }}>Penger spart</Text>
-                <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#4cbb17', marginTop: 4 }}>
+                <Text style={{ fontSize: 18, fontWeight: 'bold', color: theme.accent, marginTop: 4 }}>
                 {moneySaved} kr
                 </Text>
             </View>
