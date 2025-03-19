@@ -185,7 +185,7 @@ export default function ProductList({ isOfferPage, onProductPress }: ProductList
           onPress={() => toggleFn(item)}
         >
           <Ionicons
-            name={checked ? "checkbox" : "checkbox-outline"}
+            name={checked ? "checkbox" : "square-outline"}
             size={20}
             color={theme.primary}
             style={{ marginRight: 8 }}
