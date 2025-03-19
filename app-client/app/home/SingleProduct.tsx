@@ -13,6 +13,7 @@ import { useRoute, RouteProp } from '@react-navigation/native';
 import { useColorScheme } from 'react-native';
 import { getTheme } from '@/constants/Colors';
 import { Product } from '@/types/kassal';
+import PriceHistoryChart from '@/components/PriceHistoryChart'; // <-- Import the chart
 
 type HomeStackParamList = {
   singleProduct: { product: Product };
@@ -75,11 +76,10 @@ export default function SingleProduct() {
         return (
           <View style={styles.tabContainer}>
             {product.price_history && product.price_history.length > 0 ? (
-              product.price_history.map((entry, index) => (
-                <Text key={index} style={[styles.sectionBody, { color: theme.text }]}>
-                  {new Date(entry.date).toLocaleDateString()}: {entry.price} kr
-                </Text>
-              ))
+              <>
+                {/* Render the Chart */}
+                <PriceHistoryChart data={product.price_history} />
+              </>
             ) : (
               <Text style={[styles.sectionBody, { color: theme.text }]}>
                 No price history available.
@@ -98,7 +98,12 @@ export default function SingleProduct() {
             </Text>
             {product.allergens && product.allergens.length > 0 && (
               <>
-                <Text style={[styles.sectionSubtitle, { color: theme.text, marginTop: 12 }]}>
+                <Text
+                  style={[
+                    styles.sectionSubtitle,
+                    { color: theme.text, marginTop: 12 },
+                  ]}
+                >
                   Allergens:
                 </Text>
                 {product.allergens.map((allergen, idx) => (
@@ -207,6 +212,7 @@ export default function SingleProduct() {
   );
 }
 
+// Styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -268,3 +274,4 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
 });
+
