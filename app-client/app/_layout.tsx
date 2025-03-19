@@ -7,6 +7,11 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { CartProvider } from '@/context/ShoppingListContext';
 
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+const queryClient = new QueryClient();
+
+
 /**
  * Custom hook to create a theme object for React Navigation.
  */
@@ -42,15 +47,17 @@ export default function RootLayout() {
   }
 
   return (
-    <CartProvider> 
-    <ThemeProvider value={theme}>
-      <Stack>
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-    </ThemeProvider>
-    </CartProvider>
+    <QueryClientProvider client={queryClient}>
+      <CartProvider> 
+        <ThemeProvider value={theme}>
+          <Stack>
+            <Stack.Screen name="index" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="+not-found" />
+          </Stack>
+          <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+        </ThemeProvider>
+      </CartProvider>
+    </QueryClientProvider>
   );
 }
