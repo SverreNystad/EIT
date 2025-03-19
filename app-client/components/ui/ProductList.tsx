@@ -9,7 +9,7 @@ import {
   Modal,
   useColorScheme,
   StyleSheet,
-  ScrollView
+  ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Colors from "@/constants/Colors";
@@ -34,10 +34,12 @@ export default function ProductList({ isOfferPage, onProductPress }: ProductList
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStores, setSelectedStores] = useState<string[]>([]);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
+  const [selectedAllergens, setSelectedAllergens] = useState<string[]>([]);
 
   // Derived lists for filters
   const [storeList, setStoreList] = useState<string[]>([]);
   const [brandList, setBrandList] = useState<string[]>([]);
+  const [allergenList, setAllergenList] = useState<string[]>([]);
 
   // Modal visibility
   const [filterModalVisible, setFilterModalVisible] = useState(false);
@@ -45,6 +47,7 @@ export default function ProductList({ isOfferPage, onProductPress }: ProductList
   // Temporary states for user’s selection in the modal
   const [tempSelectedStores, setTempSelectedStores] = useState<string[]>([]);
   const [tempSelectedBrands, setTempSelectedBrands] = useState<string[]>([]);
+  const [tempSelectedAllergens, setTempSelectedAllergens] = useState<string[]>([]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -63,8 +66,18 @@ export default function ProductList({ isOfferPage, onProductPress }: ProductList
           new Set(productsData.data.map((p) => p.brand).filter(Boolean))
         ) as string[];
 
+        // Build allergen list by flattening the allergens from each product
+        const allergens = Array.from(
+          new Set(
+            productsData.data.flatMap((p) =>
+              p.allergens ? p.allergens.map((a) => a.display_name) : []
+            )
+          )
+        ) as string[];
+
         setStoreList(stores);
         setBrandList(brands);
+        setAllergenList(allergens);
       } catch (error) {
         console.error("Failed to load products:", error);
       } finally {
@@ -97,14 +110,21 @@ export default function ProductList({ isOfferPage, onProductPress }: ProductList
       );
     }
 
+    if (selectedAllergens.length > 0) {
+      filtered = filtered.filter((p) =>
+        p.allergens?.some((a) => selectedAllergens.includes(a.display_name))
+      );
+    }
+
     setFilteredProducts(filtered);
-  }, [searchQuery, selectedStores, selectedBrands, products]);
+  }, [searchQuery, selectedStores, selectedBrands, selectedAllergens, products]);
 
   // Toggle the filter modal
   const openFilterModal = () => {
     // Copy current filters into temp states
     setTempSelectedStores([...selectedStores]);
     setTempSelectedBrands([...selectedBrands]);
+    setTempSelectedAllergens([...selectedAllergens]);
     setFilterModalVisible(true);
   };
 
@@ -116,6 +136,7 @@ export default function ProductList({ isOfferPage, onProductPress }: ProductList
   const applyFilters = () => {
     setSelectedStores([...tempSelectedStores]);
     setSelectedBrands([...tempSelectedBrands]);
+    setSelectedAllergens([...tempSelectedAllergens]);
     setFilterModalVisible(false);
   };
 
@@ -123,6 +144,7 @@ export default function ProductList({ isOfferPage, onProductPress }: ProductList
   const clearAllFilters = () => {
     setTempSelectedStores([]);
     setTempSelectedBrands([]);
+    setTempSelectedAllergens([]);
   };
 
   // Toggle store in local state
@@ -139,7 +161,16 @@ export default function ProductList({ isOfferPage, onProductPress }: ProductList
     );
   };
 
-  // Renders the list of checkboxes for store or brand
+  // Toggle allergen in local state
+  const toggleTempAllergen = (allergen: string) => {
+    setTempSelectedAllergens((prev) =>
+      prev.includes(allergen)
+        ? prev.filter((a) => a !== allergen)
+        : [...prev, allergen]
+    );
+  };
+
+  // Renders the list of checkboxes for a filter category
   const renderFilterCheckboxes = (
     data: string[],
     tempSelected: string[],
@@ -190,7 +221,7 @@ export default function ProductList({ isOfferPage, onProductPress }: ProductList
       </View>
 
       {/* Filter Button Under Search Bar */}
-      <View style={{ marginBottom: 5, marginTop:10 }}>
+      <View style={{ marginBottom: 5, marginTop: 10 }}>
         <TouchableOpacity
           onPress={openFilterModal}
           style={[
@@ -198,13 +229,22 @@ export default function ProductList({ isOfferPage, onProductPress }: ProductList
             { backgroundColor: theme.card, borderColor: theme.primary },
           ]}
         >
-          <Ionicons name="options" size={20} color={theme.text} style={{ marginRight: 6 }} />
+          <Ionicons
+            name="options"
+            size={20}
+            color={theme.text}
+            style={{ marginRight: 6 }}
+          />
           <Text style={{ color: theme.text, fontWeight: "500" }}>Filter</Text>
         </TouchableOpacity>
       </View>
 
       {loading ? (
-        <ActivityIndicator size="large" color={theme.primary} style={{ marginTop: 12 }} />
+        <ActivityIndicator
+          size="large"
+          color={theme.primary}
+          style={{ marginTop: 12 }}
+        />
       ) : (
         <FlatList
           data={filteredProducts}
@@ -238,10 +278,17 @@ export default function ProductList({ isOfferPage, onProductPress }: ProductList
               onPress={clearAllFilters}
               style={[
                 styles.clearAllButton,
-                { borderColor: theme.primary, backgroundColor: theme.background },
+                {
+                  borderColor: theme.primary,
+                  backgroundColor: theme.background,
+                },
               ]}
             >
-              <Ionicons name="trash-outline" size={16} color={theme.primary} />
+              <Ionicons
+                name="trash-outline"
+                size={16}
+                color={theme.primary}
+              />
               <Text style={{ color: theme.primary, marginLeft: 6 }}>
                 Fjern alle
               </Text>
@@ -260,6 +307,13 @@ export default function ProductList({ isOfferPage, onProductPress }: ProductList
               </Text>
               <View style={styles.checkboxContainer}>
                 {renderFilterCheckboxes(brandList, tempSelectedBrands, toggleTempBrand)}
+              </View>
+
+              <Text style={[styles.modalSubtitle, { color: theme.text }]}>
+                Allergener
+              </Text>
+              <View style={styles.checkboxContainer}>
+                {renderFilterCheckboxes(allergenList, tempSelectedAllergens, toggleTempAllergen)}
               </View>
             </ScrollView>
 
@@ -315,13 +369,13 @@ const styles = StyleSheet.create({
   modalBackground: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center"
+    justifyContent: "center",
   },
   modalContainer: {
     marginHorizontal: 20,
     borderRadius: 12,
     padding: 20,
-    maxHeight: "60%", 
+    maxHeight: "60%",
   },
   modalTitle: {
     fontSize: 18,
@@ -361,5 +415,5 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 8,
     marginLeft: 10,
-  }
+  },
 });
