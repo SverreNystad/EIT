@@ -64,8 +64,6 @@ export default function ProductList({ isOfferPage, onProductPress }: ProductList
     queryFn: () =>
       getProducts({
         search: searchQuery || undefined,
-        vendor:
-          selectedStores.length === 1 ? selectedStores[0] : undefined,
         brand:
           selectedBrands.length === 1 ? selectedBrands[0] : undefined,
         size: 20,
@@ -103,7 +101,7 @@ export default function ProductList({ isOfferPage, onProductPress }: ProductList
   const filteredProducts = useMemo(() => {
     let result = products;
 
-    if (selectedStores.length > 1) {
+    if (selectedStores.length > 0) {
       result = result.filter(
         (p) => p.store?.name && selectedStores.includes(p.store.name)
       );
@@ -122,7 +120,7 @@ export default function ProductList({ isOfferPage, onProductPress }: ProductList
     }
 
     return result;
-  }, [products, selectedStores, selectedBrands, selectedAllergens]);
+}, [products, selectedStores, selectedBrands, selectedAllergens]);
 
   // Filter modal handlers...
   const openFilterModal = () => {
