@@ -115,7 +115,9 @@ export default function ProductList({ isOfferPage, onProductPress }: ProductList
 
     if (selectedAllergens.length > 0) {
       result = result.filter((p) =>
-        p.allergens?.some((a) => selectedAllergens.includes(a.display_name))
+        !p.allergens?.some((a) =>
+          selectedAllergens.includes(a.display_name) && a.contains === "YES"
+        )
       );
     }
 
