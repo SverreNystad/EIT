@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, FlatList, Pressable, useColorScheme } from 'react-native';
+import { View, Text, FlatList, Pressable, useColorScheme, ScrollView, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import Colors, { getTheme } from '@/constants/Colors';
 import ProductCard from '@/components/ui/ProductCard';
 import OfferCard from '@/components/ui/OfferCard';
@@ -12,7 +12,7 @@ interface SectionProps {
   isOfferSection?: boolean;
   onSeeMore: () => void;
   productClick: (product: Product) => void;
-
+  handleScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
   // Added this callback so the cards can animate to cart
   flyToCart?: (layout: LayoutRectangle, imageUri: string) => void;
 }
@@ -23,6 +23,7 @@ export default function Section({
   isOfferSection = false,
   onSeeMore,
   productClick,
+  handleScroll,
   flyToCart
 }: SectionProps) {
   const colorScheme = useColorScheme();
@@ -43,6 +44,16 @@ export default function Section({
       </View>
 
       {/* Horizontal List of Cards */}
+       <ScrollView
+            horizontal // Make it horizontally scrollable
+            onScroll={handleScroll} // Attach the scroll handler
+            scrollEventThrottle={16} // How often to receive scroll events
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{
+              paddingHorizontal: 20,
+            }}
+          >
+
       <FlatList
         horizontal
         data={data}
@@ -54,22 +65,23 @@ export default function Section({
             // OfferCard has a prop for pressing the product, and for the fly-to-cart
             return (
               <OfferCard
-                product={item}
-                onPressProduct={() => productClick(item)}
-                flyToCart={flyToCart}
+              product={item}
+              onPressProduct={() => productClick(item)}
+              flyToCart={flyToCart}
               />
             );
           } else {
             return (
               <ProductCard
-                product={item}
-                onPressProduct={() => productClick(item)}
-                flyToCart={flyToCart}
+              product={item}
+              onPressProduct={() => productClick(item)}
+              flyToCart={flyToCart}
               />
             );
           }
         }}
-      />
+        />
+        </ScrollView>
     </View>
   );
 }
