@@ -3,12 +3,11 @@ import { View, Text, FlatList, TouchableOpacity, useColorScheme } from 'react-na
 import Colors from '@/constants/Colors';
 import { useCart } from '@/context/ShoppingListContext';
 import { AntDesign } from '@expo/vector-icons';
-import { Product } from '@/types/kassal';
 
 export default function ShoppingListTab() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme] || Colors.light;
-  const { cart, addToCart, removeFromCart, clearCart } = useCart();
+  const { cart, addToCart, removeFromCart, removeAllFromCart, clearCart } = useCart();
   const [completedItems, setCompletedItems] = useState<string[]>([]);
 
   const toggleItem = (productId: string) => {
@@ -17,14 +16,9 @@ export default function ShoppingListTab() {
     );
   };
 
-  const handleRemoveFromCart = (productId: string) => {
-    setCompletedItems((prev) => prev.filter(id => id !== productId));
-    removeFromCart(productId);
-  };
-
-  const handleClearCart = () => {
-    setCompletedItems([]);
-    clearCart();
+  const handleRemoveAllFromCart = (productId: string) => {
+    removeAllFromCart(productId);
+    setCompletedItems(prev => prev.filter(id => id !== productId));
   };
 
   const groupedCart = cart.reduce((acc, item) => {
@@ -75,40 +69,51 @@ export default function ShoppingListTab() {
                         elevation: 3,
                       }}
                     >
-                      {/* Checkbox + Product Name */}
+                      {/* Product Name + Delete Icon */}
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <TouchableOpacity 
-                          onPress={() => toggleItem(item.product.id.toString())} 
-                          style={{
-                            width: 26,
-                            height: 26,
-                            borderRadius: 6,
-                            borderWidth: 2,
-                            borderColor: completedItems.includes(item.product.id.toString()) ? '#4CAF50' : 'gray',
-                            backgroundColor: completedItems.includes(item.product.id.toString()) ? '#A5D6A7' : 'transparent',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          {completedItems.includes(item.product.id.toString()) && (
-                            <AntDesign name="check" size={18} color="white" />
-                          )}
-                        </TouchableOpacity>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                          <TouchableOpacity 
+                            onPress={() => toggleItem(item.product.id.toString())} 
+                            style={{
+                              width: 26,
+                              height: 26,
+                              borderRadius: 6,
+                              borderWidth: 2,
+                              borderColor: completedItems.includes(item.product.id.toString()) ? '#4CAF50' : 'gray',
+                              backgroundColor: completedItems.includes(item.product.id.toString()) ? '#A5D6A7' : 'transparent',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              marginRight: 10
+                            }}
+                          >
+                            {completedItems.includes(item.product.id.toString()) && (
+                              <AntDesign name="check" size={18} color="white" />
+                            )}
+                          </TouchableOpacity>
 
-                        <Text style={{ 
-                          flex: 1,
-                          marginLeft: 12,
-                          color: theme.text, 
-                          fontSize: 16, 
-                          fontWeight: 'bold',
-                          textDecorationLine: completedItems.includes(item.product.id.toString()) ? 'line-through' : 'none',
-                        }}>
-                          {item.product.name}
-                        </Text>
+                          <Text style={{ 
+                            flex: 1,
+                            color: theme.text, 
+                            fontSize: 16, 
+                            fontWeight: 'bold',
+                            textDecorationLine: completedItems.includes(item.product.id.toString()) ? 'line-through' : 'none',
+                          }}>
+                            {item.product.name}
+                          </Text>
+                        </View>
+
+                        {/* Trash Can Icon */}
+                        <TouchableOpacity 
+                          onPress={() => handleRemoveAllFromCart(item.product.id.toString())}
+                          style={{ padding: 8 }}
+                        >
+                          <AntDesign name="delete" size={22} color="red" />
+                        </TouchableOpacity>
                       </View>
 
-                      {/* Quantity Selector */}
+                      {/* Quantity Selector & Price */}
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
+                        {/* Quantity Control */}
                         <View 
                           style={{
                             flexDirection: 'row', 
@@ -118,10 +123,10 @@ export default function ShoppingListTab() {
                             borderRadius: 10, 
                             paddingHorizontal: 10, 
                             paddingVertical: 4,
-                            marginLeft:40
+                            marginLeft: 40
                           }}
                         >
-                          <TouchableOpacity onPress={() => handleRemoveFromCart(item.product.id.toString())}>
+                          <TouchableOpacity onPress={() => removeFromCart(item.product.id.toString())}>
                             <AntDesign name="minus" size={19} color={theme.primary} />
                           </TouchableOpacity>
 
@@ -153,10 +158,10 @@ export default function ShoppingListTab() {
         />
       )}
 
-      {/* "Tøm Handleliste" */}
+      {/* "Tøm Handleliste" Button */}
       {cart.length > 0 && (
         <TouchableOpacity 
-          onPress={handleClearCart} 
+          onPress={clearCart} 
           style={{
             backgroundColor: '#D72638', 
             padding: 16, 

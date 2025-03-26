@@ -12,7 +12,8 @@ interface CartContextType {
   cart: CartItem[];
   addToCart: (product: Product) => void;
   removeFromCart: (productId: string) => void;
-  clearCart: () => void; // ✅ Added clearCart function
+  removeAllFromCart: (productId: string) => void; 
+  clearCart: () => void;
 }
 
 // Create the cart context
@@ -37,7 +38,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
-  // Remove one item at a time
+  // Remove one instance of the product
   const removeFromCart = (productId: string) => {
     setCart((prevCart) =>
       prevCart
@@ -46,17 +47,22 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
             ? { ...item, quantity: item.quantity - 1 }
             : item
         )
-        .filter((item) => item.quantity > 0)
+        .filter((item) => item.quantity > 0) // Remove item if quantity is 0
     );
   };
 
-  // ✅ New: Clear entire cart at once
+  // Remove all instances of a product at once
+  const removeAllFromCart = (productId: string) => {
+    setCart((prevCart) => prevCart.filter(item => item.product.id.toString() !== productId));
+  };
+
+  // Clear the entire cart
   const clearCart = () => {
-    setCart([]); // Resets the shopping list
+    setCart([]); 
   };
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, clearCart }}>
+    <CartContext.Provider value={{ cart, addToCart, removeFromCart, removeAllFromCart, clearCart }}>
       {children}
     </CartContext.Provider>
   );

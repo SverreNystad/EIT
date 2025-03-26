@@ -133,9 +133,10 @@ export const recommendedRecipes = async (
     const response = await axios.post<RecommendedRecipesResponse>(
       API_ROUTES.recipes.recommend,
       payload
-    );
+    )
     return response.data;
   } catch (error: any) {
+    console.error(error.message)
     throw new Error(error.response?.data?.detail || error.message);
   }
 };
