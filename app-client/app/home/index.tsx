@@ -38,7 +38,7 @@ export default function HomeScreen() {
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 10;
+  const pageSize = 20;
 
   // React Query: fetch products with pagination parameters
   const {
