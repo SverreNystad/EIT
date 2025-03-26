@@ -23,6 +23,7 @@ import {
 } from '@/types/recipes';
 // The same parser you used in SingleRecipePage:
 import { parseImagesString } from './utils';
+import { useQuery } from '@tanstack/react-query';
 
 /** 
  * A fallback local image for recipes without an image. 
@@ -36,68 +37,66 @@ type RecipeRecommendationPageNavProp = StackNavigationProp<
   'recommendations'
 >;
 
-export default function RecipeRecommendationPage() {
+export default async function RecipeRecommendationPage() {
   const navigation = useNavigation<RecipeRecommendationPageNavProp>();
   const colorScheme = useColorScheme() || 'light';
   const theme = getTheme(colorScheme);
 
-  const [mealData, setMealData] = useState<RecommendedRecipesResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  
+  
+  const fetchrecommendations=async():Promise<RecommendedRecipesResponse>=>{
+    const storedProfile = await AsyncStorage.getItem(PROFILE_STORAGE_KEY);
 
-  useEffect(() => {
-    const loadRecipes = async () => {
-      try {
-        const storedProfile = await AsyncStorage.getItem(PROFILE_STORAGE_KEY);
-
-        let userData: {
-          gender: string;
-          weight: number;
-          height: number;
-          age: number;
-          activity: string;
-          objective: string;
-        } = {
-          // Default fallback
-          gender: 'male',
-          weight: 70,
-          height: 175,
-          age: 25,
-          activity: 'sedentary',
-          objective: 'weight_loss',
-        };
-
-        if (storedProfile) {
-          const parsed = JSON.parse(storedProfile);
-          userData = {
-            gender: parsed.gender || 'male',
-            weight: parsed.weight || 70,
-            height: parsed.height || 175,
-            age: parsed.age || 25,
-            activity: parsed.activity || 'sedentary',
-            objective: parsed.objective || 'weight_loss',
-          };
-        }
-
-        const requestPayload: MealRecommendationRequest = {
-          category: userData.gender as 'male' | 'female',
-          body_weight: userData.weight,
-          body_height: userData.height,
-          age: userData.age,
-          activity_intensity: userData.activity as MealRecommendationRequest['activity_intensity'],
-          objective: userData.objective as MealRecommendationRequest['objective'],
-        };
-
-        const response: RecommendedRecipesResponse = await recommendedRecipes(requestPayload);
-        setMealData(response);
-      } catch (error) {
-        console.error('Error loading recipes:', error);
-      } finally {
-        setLoading(false);
-      }
+    let userData: {
+      gender: string;
+      weight: number;
+      height: number;
+      age: number;
+      activity: string;
+      objective: string;
+    } = {
+      // Default fallback
+      gender: 'male',
+      weight: 70,
+      height: 175,
+      age: 25,
+      activity: 'sedentary',
+      objective: 'weight_loss',
     };
 
-    loadRecipes();
-  }, []);
+    if (storedProfile) {
+      const parsed = JSON.parse(storedProfile);
+      userData = {
+        gender: parsed.gender || 'male',
+        weight: parsed.weight || 70,
+        height: parsed.height || 175,
+        age: parsed.age || 25,
+        activity: parsed.activity || 'sedentary',
+        objective: parsed.objective || 'weight_loss',
+      };
+    }
+
+    const requestPayload: MealRecommendationRequest = {
+      category: userData.gender as 'male' | 'female',
+      body_weight: userData.weight,
+      body_height: userData.height,
+      age: userData.age,
+      activity_intensity: userData.activity as MealRecommendationRequest['activity_intensity'],
+      objective: userData.objective as MealRecommendationRequest['objective'],
+    };
+    return recommendedRecipes(requestPayload);
+  }
+
+  const{
+    data: mealData,
+    isLoading,
+    error,
+  } =useQuery<RecommendedRecipesResponse>({
+    queryKey:[
+      "reccomendations"
+    ],
+    queryFn:()=>fetchrecommendations()
+  })
 
   const handleRecipePress = (recipe: MealRecommendationResponse) => {
     navigation.navigate('singleRecipe', { recipe });
@@ -154,7 +153,7 @@ export default function RecipeRecommendationPage() {
     );
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <View style={[styles.centered, { backgroundColor: theme.background }]}>
         <ActivityIndicator size="large" color={theme.primary} />
