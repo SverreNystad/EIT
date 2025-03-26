@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -12,13 +12,16 @@ import {
   ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+
+import { useQuery } from "@tanstack/react-query";
+
 import Colors from "@/constants/Colors";
 import { getProducts } from "@/services/api";
 import { Product, ProductsResponse } from "@/types/kassal";
 import ProductItem from "./ProductItem";
 
 interface ProductListProps {
-  isOfferPage?: boolean; // If true, shows fake before-price for offers
+  isOfferPage?: boolean;
   onProductPress: (product: Product) => void;
 }
 
@@ -26,110 +29,103 @@ export default function ProductList({ isOfferPage, onProductPress }: ProductList
   const colorScheme = useColorScheme() ?? "light";
   const theme = Colors[colorScheme] || Colors.light;
 
-  const [products, setProducts] = useState<Product[]>([]);
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  // Main search and filter states
+  // Local states
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStores, setSelectedStores] = useState<string[]>([]);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [selectedAllergens, setSelectedAllergens] = useState<string[]>([]);
 
-  // Derived lists for filters
   const [storeList, setStoreList] = useState<string[]>([]);
   const [brandList, setBrandList] = useState<string[]>([]);
   const [allergenList, setAllergenList] = useState<string[]>([]);
 
-  // Modal visibility
+  // Modal / filter UI states
   const [filterModalVisible, setFilterModalVisible] = useState(false);
-
-  // Temporary states for user’s selection in the modal
   const [tempSelectedStores, setTempSelectedStores] = useState<string[]>([]);
   const [tempSelectedBrands, setTempSelectedBrands] = useState<string[]>([]);
   const [tempSelectedAllergens, setTempSelectedAllergens] = useState<string[]>([]);
-
-  // State for "see more" toggles for each category
   const [showAllStores, setShowAllStores] = useState(false);
   const [showAllBrands, setShowAllBrands] = useState(false);
   const [showAllAllergens, setShowAllAllergens] = useState(false);
-
-  // Number of items to show when collapsed
   const filterLimit = 4;
 
+  const {
+    data: productsData,
+    isLoading,
+    isError,
+    error,
+  } = useQuery<ProductsResponse>({
+    queryKey: [
+      "products",
+      searchQuery,
+      selectedStores,
+      selectedBrands,
+    ],
+    queryFn: () =>
+      getProducts({
+        search: searchQuery || undefined,
+        vendor:
+          selectedStores.length === 1 ? selectedStores[0] : undefined,
+        brand:
+          selectedBrands.length === 1 ? selectedBrands[0] : undefined,
+        size: 20,
+      }),
+  });
+
+  const products = productsData?.data || [];
+
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        const productsData: ProductsResponse = await getProducts({ size: 50 });
-        setProducts(productsData.data);
-        setFilteredProducts(productsData.data);
-
-        // Build store and brand lists from product data
-        const stores = Array.from(
-          new Set(productsData.data.map((p) => p.store?.name).filter(Boolean))
-        ) as string[];
-
-        const brands = Array.from(
-          new Set(productsData.data.map((p) => p.brand).filter(Boolean))
-        ) as string[];
-
-        // Build allergen list by flattening the allergens from each product
-        const allergens = Array.from(
-          new Set(
-            productsData.data.flatMap((p) =>
-              p.allergens ? p.allergens.map((a) => a.display_name) : []
-            )
-          )
-        ) as string[];
-
-        setStoreList(stores);
-        setBrandList(brands);
-        setAllergenList(allergens);
-      } catch (error) {
-        console.error("Failed to load products:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadData();
-  }, []);
-
-  // Apply main filters to product list
-  useEffect(() => {
-    let filtered = products;
-
-    if (searchQuery) {
-      filtered = filtered.filter((p) =>
-        p.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+    if (!products.length) {
+      setStoreList([]);
+      setBrandList([]);
+      setAllergenList([]);
+      return;
     }
+    const stores = Array.from(
+      new Set(products.map((p) => p.store?.name).filter(Boolean))
+    ) as string[];
+    const brands = Array.from(
+      new Set(products.map((p) => p.brand).filter(Boolean))
+    ) as string[];
+    const allergens = Array.from(
+      new Set(
+        products.flatMap((p) =>
+          p.allergens ? p.allergens.map((a) => a.display_name) : []
+        )
+      )
+    ) as string[];
 
-    if (selectedStores.length > 0) {
-      filtered = filtered.filter(
+    setStoreList(stores);
+    setBrandList(brands);
+    setAllergenList(allergens);
+  }, [products]);
+
+  const filteredProducts = useMemo(() => {
+    let result = products;
+
+    if (selectedStores.length > 1) {
+      result = result.filter(
         (p) => p.store?.name && selectedStores.includes(p.store.name)
       );
     }
 
-    if (selectedBrands.length > 0) {
-      filtered = filtered.filter(
+    if (selectedBrands.length > 1) {
+      result = result.filter(
         (p) => p.brand && selectedBrands.includes(p.brand)
       );
     }
 
     if (selectedAllergens.length > 0) {
-      filtered = filtered.filter((p) =>
+      result = result.filter((p) =>
         p.allergens?.some((a) => selectedAllergens.includes(a.display_name))
       );
     }
 
-    setFilteredProducts(filtered);
-  }, [searchQuery, selectedStores, selectedBrands, selectedAllergens, products]);
+    return result;
+  }, [products, selectedStores, selectedBrands, selectedAllergens]);
 
-  // Toggle the filter modal
+  // Filter modal handlers...
   const openFilterModal = () => {
-    // Copy current filters into temp states
     setTempSelectedStores([...selectedStores]);
     setTempSelectedBrands([...selectedBrands]);
     setTempSelectedAllergens([...selectedAllergens]);
@@ -140,7 +136,6 @@ export default function ProductList({ isOfferPage, onProductPress }: ProductList
     setFilterModalVisible(false);
   };
 
-  // "Bruk Filtre" button
   const applyFilters = () => {
     setSelectedStores([...tempSelectedStores]);
     setSelectedBrands([...tempSelectedBrands]);
@@ -148,28 +143,28 @@ export default function ProductList({ isOfferPage, onProductPress }: ProductList
     setFilterModalVisible(false);
   };
 
-  // "Fjern alle" button
   const clearAllFilters = () => {
     setTempSelectedStores([]);
     setTempSelectedBrands([]);
     setTempSelectedAllergens([]);
   };
 
-  // Toggle store in local state
   const toggleTempStore = (store: string) => {
     setTempSelectedStores((prev) =>
-      prev.includes(store) ? prev.filter((s) => s !== store) : [...prev, store]
+      prev.includes(store)
+        ? prev.filter((s) => s !== store)
+        : [...prev, store]
     );
   };
 
-  // Toggle brand in local state
   const toggleTempBrand = (brand: string) => {
     setTempSelectedBrands((prev) =>
-      prev.includes(brand) ? prev.filter((b) => b !== brand) : [...prev, brand]
+      prev.includes(brand)
+        ? prev.filter((b) => b !== brand)
+        : [...prev, brand]
     );
   };
 
-  // Toggle allergen in local state
   const toggleTempAllergen = (allergen: string) => {
     setTempSelectedAllergens((prev) =>
       prev.includes(allergen)
@@ -178,7 +173,6 @@ export default function ProductList({ isOfferPage, onProductPress }: ProductList
     );
   };
 
-  // Renders the list of checkboxes for a filter category
   const renderFilterCheckboxes = (
     data: string[],
     tempSelected: string[],
@@ -247,13 +241,19 @@ export default function ProductList({ isOfferPage, onProductPress }: ProductList
         </TouchableOpacity>
       </View>
 
-      {loading ? (
+      {isLoading && (
         <ActivityIndicator
           size="large"
           color={theme.primary}
           style={{ marginTop: 12 }}
         />
-      ) : (
+      )}
+      {isError && (
+        <Text style={{ color: "red", marginTop: 12 }}>
+          Det oppstod en feil: {String(error)}
+        </Text>
+      )}
+      {!isLoading && !isError && (
         <FlatList
           data={filteredProducts}
           keyExtractor={(item) => item.id.toString()}
@@ -277,11 +277,8 @@ export default function ProductList({ isOfferPage, onProductPress }: ProductList
       >
         <View style={styles.modalBackground}>
           <View style={[styles.modalContainer, { backgroundColor: theme.card }]}>
-            <Text style={[styles.modalTitle, { color: theme.text }]}>
-              Filtre
-            </Text>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>Filtre</Text>
 
-            {/* "Fjern alle" button */}
             <TouchableOpacity
               onPress={clearAllFilters}
               style={[
@@ -310,7 +307,9 @@ export default function ProductList({ isOfferPage, onProductPress }: ProductList
                   toggleTempStore
                 )}
                 {storeList.length > filterLimit && (
-                  <TouchableOpacity onPress={() => setShowAllStores(!showAllStores)}>
+                  <TouchableOpacity
+                    onPress={() => setShowAllStores(!showAllStores)}
+                  >
                     <Text style={{ color: theme.primary, marginTop: 4 }}>
                       {showAllStores ? "Vis mindre" : "Vis mer"}
                     </Text>
@@ -329,7 +328,9 @@ export default function ProductList({ isOfferPage, onProductPress }: ProductList
                   toggleTempBrand
                 )}
                 {brandList.length > filterLimit && (
-                  <TouchableOpacity onPress={() => setShowAllBrands(!showAllBrands)}>
+                  <TouchableOpacity
+                    onPress={() => setShowAllBrands(!showAllBrands)}
+                  >
                     <Text style={{ color: theme.primary, marginTop: 4 }}>
                       {showAllBrands ? "Vis mindre" : "Vis mer"}
                     </Text>
@@ -343,12 +344,16 @@ export default function ProductList({ isOfferPage, onProductPress }: ProductList
               </Text>
               <View style={styles.checkboxContainer}>
                 {renderFilterCheckboxes(
-                  showAllAllergens ? allergenList : allergenList.slice(0, filterLimit),
+                  showAllAllergens
+                    ? allergenList
+                    : allergenList.slice(0, filterLimit),
                   tempSelectedAllergens,
                   toggleTempAllergen
                 )}
                 {allergenList.length > filterLimit && (
-                  <TouchableOpacity onPress={() => setShowAllAllergens(!showAllAllergens)}>
+                  <TouchableOpacity
+                    onPress={() => setShowAllAllergens(!showAllAllergens)}
+                  >
                     <Text style={{ color: theme.primary, marginTop: 4 }}>
                       {showAllAllergens ? "Vis mindre" : "Vis mer"}
                     </Text>
