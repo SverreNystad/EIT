@@ -7,8 +7,8 @@ import {
   NativeSyntheticEvent,
   NativeScrollEvent,
   ScrollView,
-  LayoutRectangle, // <-- For measuring item layouts
-  Image,           // <-- For the animated Image
+  LayoutRectangle,
+  Image,
   useColorScheme,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
