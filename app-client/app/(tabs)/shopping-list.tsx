@@ -1,32 +1,95 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, useColorScheme } from 'react-native';
+import { AntDesign } from '@expo/vector-icons';
+
 import Colors from '@/constants/Colors';
 import { useCart } from '@/context/ShoppingListContext';
-import { AntDesign } from '@expo/vector-icons';
+import { getPhysicalStores } from '../../services/api';
 
 export default function ShoppingListTab() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme] || Colors.light;
+
   const { cart, addToCart, removeFromCart, removeAllFromCart, clearCart } = useCart();
   const [completedItems, setCompletedItems] = useState<string[]>([]);
 
+  // We'll store lat/lng in this object, keyed by store "code"
+  const [storePositions, setStorePositions] = useState<Record<string, { lat: number; lng: number } | null>>({});
+
+  // Toggle completed item check
   const toggleItem = (productId: string) => {
     setCompletedItems((prev) =>
       prev.includes(productId) ? prev.filter(id => id !== productId) : [...prev, productId]
     );
   };
 
+  // Remove all instances of a product from cart
   const handleRemoveAllFromCart = (productId: string) => {
     removeAllFromCart(productId);
     setCompletedItems(prev => prev.filter(id => id !== productId));
   };
 
+  // Whenever cart changes, fetch store lat/lng for each distinct store code
+  useEffect(() => {
+    async function fetchStorePositions() {
+      try {
+        // Replace with actual user position or a location from your app's logic
+        const userLat = 59.91;
+        const userLng = 10.75;
+        const kmRadius = 20;
+
+        // Collect unique store codes from cart
+        const uniqueStoreCodes = Array.from(
+          new Set(cart.map(item => item.product.store?.code))
+        ).filter(Boolean) as string[]; // Filter out undefined codes
+
+        const positionMap: Record<string, { lat: number; lng: number } | null> = {};
+
+        // For each store code, fetch physical stores near the user
+        for (const code of uniqueStoreCodes) {
+          // Example: searching within 20 km
+          const response = await getPhysicalStores({
+            group: code,
+            lat: userLat,
+            lng: userLng,
+            km: kmRadius,
+          });
+
+          // If we got at least one store, store its position (or handle multiple as needed)
+          if (response.data && response.data.length > 0) {
+            positionMap[code] = response.data[0].position;
+          } else {
+            positionMap[code] = null; // No stores found for that code in the area
+          }
+        }
+
+        setStorePositions(positionMap);
+      } catch (error) {
+        console.error('Failed to fetch store positions:', error);
+      }
+    }
+
+    if (cart.length > 0) {
+      fetchStorePositions();
+    } else {
+      setStorePositions({});
+    }
+  }, [cart]);
+
+  // Group cart items by store code (but also keep the store name for display)
   const groupedCart = cart.reduce((acc, item) => {
+    const storeCode = item.product.store?.code || 'unknown_code';
     const storeName = item.product.store?.name || 'Ukjent Butikk';
-    if (!acc[storeName]) acc[storeName] = [];
-    acc[storeName].push(item);
+
+    if (!acc[storeCode]) {
+      acc[storeCode] = {
+        storeName,
+        items: []
+      };
+    }
+    acc[storeCode].items.push(item);
     return acc;
-  }, {} as Record<string, typeof cart>);
+  }, {} as Record<string, { storeName: string; items: typeof cart }>);
 
   return (
     <View style={{ flex: 1, padding: 16, backgroundColor: theme.background, paddingTop: 40 }}>
@@ -40,27 +103,26 @@ export default function ShoppingListTab() {
         </Text>
       ) : (
         <FlatList
-          data={Object.entries(groupedCart)}
-          keyExtractor={([store]) => store}
+          data={Object.entries(groupedCart)} // => [ [storeCode, { storeName, items }], ... ]
+          keyExtractor={([storeCode]) => storeCode}
           renderItem={({ item }) => {
-            const [store, items] = item;
+            const [storeCode, { storeName, items }] = item;
+            const position = storePositions[storeCode] || null;
 
             return (
-              <View key={store} style={{ marginBottom: 20 }}>
-                <Text style={{ fontSize: 18, fontWeight: 'bold', color: theme.text, marginBottom: 10 }}>
-                  {store}
-                </Text>
-
-                {items.map((item) => {
-                  const totalPrice = (item.product.current_price * item.quantity).toFixed(2);
+              <View key={storeCode} style={{ marginBottom: 20 }}>
+                {/* Store Items */}
+                {items.map((cartItem) => {
+                  const totalPrice = (cartItem.product.current_price * cartItem.quantity).toFixed(2);
+                  const productIdStr = cartItem.product.id.toString();
 
                   return (
-                    <View 
-                      key={item.product.id.toString()}
+                    <View
+                      key={productIdStr}
                       style={{
-                        backgroundColor: theme.card, 
-                        borderRadius: 16, 
-                        padding: 16, 
+                        backgroundColor: theme.card,
+                        borderRadius: 16,
+                        padding: 16,
                         marginBottom: 12,
                         shadowColor: '#000',
                         shadowOpacity: 0.1,
@@ -70,41 +132,46 @@ export default function ShoppingListTab() {
                       }}
                     >
                       {/* Product Name + Delete Icon */}
-                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <View style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between'
+                      }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                          <TouchableOpacity 
-                            onPress={() => toggleItem(item.product.id.toString())} 
+                          {/* Checkbox to mark completed */}
+                          <TouchableOpacity
+                            onPress={() => toggleItem(productIdStr)}
                             style={{
                               width: 26,
                               height: 26,
                               borderRadius: 6,
                               borderWidth: 2,
-                              borderColor: completedItems.includes(item.product.id.toString()) ? '#4CAF50' : 'gray',
-                              backgroundColor: completedItems.includes(item.product.id.toString()) ? '#A5D6A7' : 'transparent',
+                              borderColor: completedItems.includes(productIdStr) ? '#4CAF50' : 'gray',
+                              backgroundColor: completedItems.includes(productIdStr) ? '#A5D6A7' : 'transparent',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              marginRight: 10
+                              marginRight: 10,
                             }}
                           >
-                            {completedItems.includes(item.product.id.toString()) && (
+                            {completedItems.includes(productIdStr) && (
                               <AntDesign name="check" size={18} color="white" />
                             )}
                           </TouchableOpacity>
 
-                          <Text style={{ 
+                          <Text style={{
                             flex: 1,
-                            color: theme.text, 
-                            fontSize: 16, 
+                            color: theme.text,
+                            fontSize: 16,
                             fontWeight: 'bold',
-                            textDecorationLine: completedItems.includes(item.product.id.toString()) ? 'line-through' : 'none',
+                            textDecorationLine: completedItems.includes(productIdStr) ? 'line-through' : 'none',
                           }}>
-                            {item.product.name}
+                            {cartItem.product.name}
                           </Text>
                         </View>
 
-                        {/* Trash Can Icon */}
-                        <TouchableOpacity 
-                          onPress={() => handleRemoveAllFromCart(item.product.id.toString())}
+                        {/* Trash Icon to remove all of this product */}
+                        <TouchableOpacity
+                          onPress={() => handleRemoveAllFromCart(productIdStr)}
                           style={{ padding: 8 }}
                         >
                           <AntDesign name="delete" size={22} color="red" />
@@ -112,40 +179,52 @@ export default function ShoppingListTab() {
                       </View>
 
                       {/* Quantity Selector & Price */}
-                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
+                      <View style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        marginTop: 10,
+                      }}>
                         {/* Quantity Control */}
-                        <View 
+                        <View
                           style={{
-                            flexDirection: 'row', 
-                            alignItems: 'center', 
-                            borderWidth: 2, 
-                            borderColor: theme.primary, 
-                            borderRadius: 10, 
-                            paddingHorizontal: 10, 
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            borderWidth: 2,
+                            borderColor: theme.primary,
+                            borderRadius: 10,
+                            paddingHorizontal: 10,
                             paddingVertical: 4,
                             marginLeft: 40
                           }}
                         >
-                          <TouchableOpacity onPress={() => removeFromCart(item.product.id.toString())}>
+                          <TouchableOpacity onPress={() => removeFromCart(productIdStr)}>
                             <AntDesign name="minus" size={19} color={theme.primary} />
                           </TouchableOpacity>
 
-                          <Text style={{ fontSize: 13, fontWeight: 'bold', color: theme.primary, marginHorizontal: 12 }}>
-                            {item.quantity}
+                          <Text
+                            style={{
+                              fontSize: 13,
+                              fontWeight: 'bold',
+                              color: theme.primary,
+                              marginHorizontal: 12
+                            }}
+                          >
+                            {cartItem.quantity}
                           </Text>
 
-                          <TouchableOpacity onPress={() => addToCart(item.product)}>
+                          <TouchableOpacity onPress={() => addToCart(cartItem.product)}>
                             <AntDesign name="plus" size={19} color={theme.primary} />
                           </TouchableOpacity>
                         </View>
 
-                        {/* Price Section */}
+                        {/* Price Display */}
                         <View>
                           <Text style={{ color: theme.text, fontSize: 16, fontWeight: 'bold', textAlign: 'right' }}>
                             {totalPrice} kr
                           </Text>
                           <Text style={{ color: theme.text, fontSize: 13, opacity: 0.6, textAlign: 'right' }}>
-                            ({item.product.current_price} kr/stk)
+                            ({cartItem.product.current_price} kr/stk)
                           </Text>
                         </View>
                       </View>
@@ -160,12 +239,12 @@ export default function ShoppingListTab() {
 
       {/* "Tøm Handleliste" Button */}
       {cart.length > 0 && (
-        <TouchableOpacity 
-          onPress={clearCart} 
+        <TouchableOpacity
+          onPress={clearCart}
           style={{
-            backgroundColor: '#D72638', 
-            padding: 16, 
-            borderRadius: 12, 
+            backgroundColor: '#D72638',
+            padding: 16,
+            borderRadius: 12,
             alignItems: 'center',
             flexDirection: 'row',
             justifyContent: 'center',
@@ -173,7 +252,9 @@ export default function ShoppingListTab() {
           }}
         >
           <AntDesign name="delete" size={22} color="white" style={{ marginRight: 10 }} />
-          <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>Tøm Handleliste</Text>
+          <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>
+            Tøm Handleliste
+          </Text>
         </TouchableOpacity>
       )}
     </View>
