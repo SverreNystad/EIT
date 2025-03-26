@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
 
   /* Card */
   card: {
-    flex: 0.48, // to fit 2 in a row with some space
+    width: '45%',
     margin: 8,
     borderRadius: 8,
     overflow: 'hidden',
