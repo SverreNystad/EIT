@@ -29,12 +29,12 @@ export default function RecipeStackLayout() {
       <Stack.Screen
         name="recommendations"
         component={RecipeRecommendationPage}
-        options={{ title: 'Recommended Recipes' }}
+        options={{ title: 'Anbefalte oppskrifter' }}
       />
       <Stack.Screen
         name="singleRecipe"
         component={SingleRecipePage}
-        options={{ title: 'Recipe Details' }}
+        options={{ title: 'Oppskrift' }}
       />
     </Stack.Navigator>
   );

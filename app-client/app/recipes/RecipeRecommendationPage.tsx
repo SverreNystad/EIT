@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  Image,
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useNavigation } from '@react-navigation/native';
@@ -14,12 +15,19 @@ import { useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getTheme } from '@/constants/Colors';
 import { RecipeStackParamList } from './_layout';
-import { recommendedRecipes } from '@/services/api'; 
+import { recommendedRecipes } from '@/services/api';
 import {
   MealRecommendationRequest,
   RecommendedRecipesResponse,
   MealRecommendationResponse,
 } from '@/types/recipes';
+// The same parser you used in SingleRecipePage:
+import { parseImagesString } from './utils';
+
+/** 
+ * A fallback local image for recipes without an image. 
+ */
+const defaultImage = require('@/assets/images/test.png');
 
 const PROFILE_STORAGE_KEY = 'userProfileData';
 
@@ -33,10 +41,7 @@ export default function RecipeRecommendationPage() {
   const colorScheme = useColorScheme() || 'light';
   const theme = getTheme(colorScheme);
 
-  // Store the entire response object rather than combining into one array
-  const [mealData, setMealData] = useState<RecommendedRecipesResponse | null>(
-    null
-  );
+  const [mealData, setMealData] = useState<RecommendedRecipesResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -52,7 +57,7 @@ export default function RecipeRecommendationPage() {
           activity: string;
           objective: string;
         } = {
-          // Default fallback values if nothing is stored
+          // Default fallback
           gender: 'male',
           weight: 70,
           height: 175,
@@ -82,11 +87,7 @@ export default function RecipeRecommendationPage() {
           objective: userData.objective as MealRecommendationRequest['objective'],
         };
 
-        const response: RecommendedRecipesResponse = await recommendedRecipes(
-          requestPayload
-        );
-
-        
+        const response: RecommendedRecipesResponse = await recommendedRecipes(requestPayload);
         setMealData(response);
       } catch (error) {
         console.error('Error loading recipes:', error);
@@ -102,33 +103,38 @@ export default function RecipeRecommendationPage() {
     navigation.navigate('singleRecipe', { recipe });
   };
 
-  /**
-   * Renders a single item (recipe card) for a FlatList.
-   */
-  const renderCard = ({ item }: { item: MealRecommendationResponse }) => (
-    <TouchableOpacity
-      style={[styles.card, { backgroundColor: theme.background }]}
-      onPress={() => handleRecipePress(item)}
-    >
-      {/* If you have a valid image URL in `item.Images`, you can render an Image here */}
-      <Text style={[styles.cardTitle, { color: theme.text }]}>
-        {item.Name}
-      </Text>
-      <Text style={[styles.cardSubtitle, { color: theme.text }]}>
-        {Math.round(item.Calories)} kcal
-      </Text>
-    </TouchableOpacity>
-  );
+  const renderCard = ({ item }: { item: MealRecommendationResponse }) => {
+    // parse images
+    const imageUrls = parseImagesString(item.Images ?? '');
+    const firstImageUrl = imageUrls[0] ?? null;
 
-  /**
-   * Renders a section (e.g., Breakfast, Lunch, Dinner, Suggestions)
-   * with a title and a FlatList of recipes.
-   */
+    return (
+      <TouchableOpacity
+        style={[styles.card, { backgroundColor: theme.card }]}
+        onPress={() => handleRecipePress(item)}
+        activeOpacity={0.8}
+      >
+        <Image
+          source={firstImageUrl ? { uri: firstImageUrl } : defaultImage}
+          style={styles.cardImage}
+          resizeMode="cover"
+        />
+        <View style={styles.cardContent}>
+          <Text style={[styles.cardTitle, { color: theme.text }]} numberOfLines={2}>
+            {item.Name}
+          </Text>
+          <Text style={[styles.cardSubtitle, { color: theme.text }]}>
+            {Math.round(item.Calories)} kcal
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
   const renderMealSection = (
     title: string,
     data: MealRecommendationResponse[] | undefined
   ) => {
-    // If there's no data or an empty array, we skip rendering
     if (!data || data.length === 0) return null;
 
     return (
@@ -138,10 +144,13 @@ export default function RecipeRecommendationPage() {
           data={data}
           keyExtractor={(item) => item.RecipeId.toString()}
           renderItem={renderCard}
-          numColumns={2} // 2-column grid for each section
+          numColumns={2}
+          columnWrapperStyle={styles.columnWrapper}
           contentContainerStyle={styles.mealContentContainer}
+          
         />
       </View>
+      
     );
   };
 
@@ -149,15 +158,17 @@ export default function RecipeRecommendationPage() {
     return (
       <View style={[styles.centered, { backgroundColor: theme.background }]}>
         <ActivityIndicator size="large" color={theme.primary} />
+        <Text style={[styles.loadingText, { color: theme.text }]}>
+          Henter anbefalte oppskrifter...
+        </Text>
       </View>
     );
   }
 
-  // If there is no mealData at this point, there's likely an error or empty response
   if (!mealData) {
     return (
       <View style={[styles.centered, { backgroundColor: theme.background }]}>
-        <Text style={{ color: theme.text }}>No recipes available.</Text>
+        <Text style={{ color: theme.text }}>Ingen oppskrifter tilgjengelig.</Text>
       </View>
     );
   }
@@ -165,12 +176,14 @@ export default function RecipeRecommendationPage() {
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: theme.background }]}
-      contentContainerStyle={{ paddingBottom: 20 }}
+      contentContainerStyle={styles.scrollContent}
     >
-      {renderMealSection('Breakfast', mealData.breakfast)}
-      {renderMealSection('Lunch', mealData.lunch)}
-      {renderMealSection('Dinner', mealData.dinner)}
-      {renderMealSection('Suggestions', mealData.suggestions)}
+     
+
+      {renderMealSection('Frokost', mealData.breakfast)}
+      {renderMealSection('Lunsj', mealData.lunch)}
+      {renderMealSection('Middag', mealData.dinner)}
+      {renderMealSection('Andre anbefalinger', mealData.suggestions)}
     </ScrollView>
   );
 }
@@ -178,45 +191,77 @@ export default function RecipeRecommendationPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    marginTop:15
+  },
+  scrollContent: {
+    paddingBottom: 20,
   },
   centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+  },
+
+  /* Header */
+  pageHeader: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginTop: 20,
+    marginBottom: 10,
+    paddingHorizontal: 16,
+  },
+
+  /* Meal Section */
   mealSection: {
     marginBottom: 20,
   },
   mealTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: '600',
     marginHorizontal: 16,
-    marginTop: 16,
     marginBottom: 8,
   },
   mealContentContainer: {
     paddingHorizontal: 8,
   },
+  columnWrapper: {
+    justifyContent: 'space-between',
+  },
+
+  /* Card */
   card: {
-    flex: 1,
+    flex: 0.48, // to fit 2 in a row with some space
     margin: 8,
     borderRadius: 8,
-    padding: 12,
-    // Optional elevation for Android
-    // elevation: 2,
-    // Optional shadow for iOS
-    // shadowColor: '#000',
-    // shadowOffset: { width: 0, height: 2 },
-    // shadowOpacity: 0.1,
-    // shadowRadius: 4,
+    overflow: 'hidden',
+
+    // iOS shadow
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 5,
+
+    // Android elevation
+    elevation: 2,
+  },
+  cardImage: {
+    width: '100%',
+    height: 100,
+  },
+  cardContent: {
+    padding: 10,
   },
   cardTitle: {
-    fontWeight: '600',
-    fontSize: 16,
+    fontWeight: '700',
+    fontSize: 14,
     marginBottom: 4,
   },
   cardSubtitle: {
-    fontSize: 14,
+    fontSize: 12,
     opacity: 0.8,
   },
 });

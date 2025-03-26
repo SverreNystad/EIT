@@ -5,33 +5,47 @@
  * and strip any extra quotes.
  */
 export function parseImagesString(imageString: string): string[] {
+  
   if (!imageString) return [];
 
-  // Trim whitespace just in case
+  // If the server returns `character(0)`, treat it as no images
+  if (imageString.trim() === 'character(0)') {
+    return [];
+  }
+
   let cleaned = imageString.trim();
 
-  // Remove leading c(" if present
-  if (cleaned.startsWith('c("')) {
-    cleaned = cleaned.substring(3);
+  // If it starts with c( or c ( or c( plus maybe spacing, remove that prefix
+  const cLeftParenRegex = /^c\s?\(\s?/;
+  if (cLeftParenRegex.test(cleaned)) {
+    cleaned = cleaned.replace(cLeftParenRegex, '');
   }
 
-  // Remove trailing ) if present
-  if (cleaned.endsWith(")")) {
-    cleaned = cleaned.slice(0, -1);
+  // If it ends with ) remove it
+  if (cleaned.endsWith(')')) {
+    cleaned = cleaned.slice(0, -1).trim();
   }
 
-  // Now we have something like: "https://example.com/img1.jpg", "https://example.com/img2.jpg", ...
-  // Split on '", "'
-  const parts = cleaned.split('", "');
+  // Now we might have something like:
+  //  "https://example.com/img1.jpg", "https://example.com/img2.jpg", ...
+  // If there's a '", "' or '","' we split by that. Otherwise, it could be just one URL
+  let parts: string[] = [];
+  if (cleaned.includes('", "')) {
+    parts = cleaned.split('", "');
+  } else if (cleaned.includes('","')) {
+    parts = cleaned.split('","');
+  } else {
+    
+    parts = [cleaned];
+  }
 
-  // Remove any leading or trailing double quotes on each part
-  const urls = parts.map((part) =>
-    part.replace(/^"/, "").replace(/"$/, "").trim()
+  // Remove leading/trailing quotes from each part
+  parts = parts.map((part) =>
+    part.replace(/^"/, '').replace(/"$/, '').trim()
   );
 
-  console.log(urls);
-  // Filter out empty strings if any
-  return urls.filter((url) => url.length > 0);
+  // Filter out empty strings
+  return parts.filter((url) => url.length > 0);
 }
 
 export function parseInstructionsString(instructions: string): string[] {
