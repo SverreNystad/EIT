@@ -4,13 +4,6 @@ import MapView, { Marker, Region } from 'react-native-maps';
 import { useLocationContext } from '@/context/LocationContext';
 import { PhysicalStore } from '@/types/kassal';
 
-interface Shop {
-  id: number;
-  name: string;
-  latitude: number;
-  longitude: number;
-}
-
 interface ShopMapProps {
     stores: PhysicalStore[]
 }
@@ -18,10 +11,7 @@ interface ShopMapProps {
 export default function ShopsMapScreen({stores}: ShopMapProps) {
   // Read location info and errors from context
   const { location, errorMsg } = useLocationContext();
-  console.log('====================================');
-  console.log(location);
-  console.log('====================================');
-
+  
   // Fallback region if we have no real location yet
   const [fallbackRegion] = useState<Region>({
     latitude: 59.91,     // e.g. Oslo

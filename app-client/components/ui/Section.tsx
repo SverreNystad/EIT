@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, FlatList, Pressable, useColorScheme, ScrollView, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
-import Colors, { getTheme } from '@/constants/Colors';
+import { getTheme } from '@/constants/Colors';
 import ProductCard from '@/components/ui/ProductCard';
 import OfferCard from '@/components/ui/OfferCard';
 import { Product } from '@/types/kassal';
