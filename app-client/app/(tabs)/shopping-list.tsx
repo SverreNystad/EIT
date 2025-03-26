@@ -5,6 +5,10 @@ import { AntDesign } from '@expo/vector-icons';
 import Colors from '@/constants/Colors';
 import { useCart } from '@/context/ShoppingListContext';
 import { getPhysicalStores } from '../../services/api';
+import { useLocationContext } from '@/context/LocationContext';
+import ShopsMap from '@/components/ShopMap'; // or wherever your ShopsMap is exported
+
+import { PhysicalStore } from '@/types/kassal'; // Adjust import path to your types
 
 export default function ShoppingListTab() {
   const colorScheme = useColorScheme() ?? 'light';
@@ -13,8 +17,17 @@ export default function ShoppingListTab() {
   const { cart, addToCart, removeFromCart, removeAllFromCart, clearCart } = useCart();
   const [completedItems, setCompletedItems] = useState<string[]>([]);
 
-  // We'll store lat/lng in this object, keyed by store "code"
-  const [storePositions, setStorePositions] = useState<Record<string, { lat: number; lng: number } | null>>({});
+  const { location, errorMsg } = useLocationContext();
+
+  // Collect all found stores here
+  const [fetchedStores, setFetchedStores] = useState<PhysicalStore[]>([]);
+
+  // Handle removing all instances of a single product
+  const handleRemoveAllFromCart = (productId: string) => {
+    removeAllFromCart(productId);
+    setCompletedItems((prev) => prev.filter((id) => id !== productId));
+  };
+
 
   // Toggle completed item check
   const toggleItem = (productId: string) => {
@@ -23,60 +36,62 @@ export default function ShoppingListTab() {
     );
   };
 
-  // Remove all instances of a product from cart
-  const handleRemoveAllFromCart = (productId: string) => {
-    removeAllFromCart(productId);
-    setCompletedItems(prev => prev.filter(id => id !== productId));
-  };
 
-  // Whenever cart changes, fetch store lat/lng for each distinct store code
+  // Whenever cart changes, fetch physical stores for each distinct store code
   useEffect(() => {
-    async function fetchStorePositions() {
+    async function fetchStoresForCart() {
       try {
-        // Replace with actual user position or a location from your app's logic
-        const userLat = 59.91;
-        const userLng = 10.75;
-        const kmRadius = 20;
+        // If user location is not ready, skip
+        if (!location) return;
 
-        // Collect unique store codes from cart
+        // Gather unique store codes from cart
         const uniqueStoreCodes = Array.from(
-          new Set(cart.map(item => item.product.store?.code))
-        ).filter(Boolean) as string[]; // Filter out undefined codes
+          new Set(cart.map((item) => item.product.store?.code))
+        ).filter(Boolean) as string[];
 
-        const positionMap: Record<string, { lat: number; lng: number } | null> = {};
+        if (uniqueStoreCodes.length === 0) {
+          setFetchedStores([]);
+          return;
+        }
 
-        // For each store code, fetch physical stores near the user
+        const kmRadius = 20;
+        let allStores: PhysicalStore[] = [];
+
+        // For each store chain "code," get up to 'kmRadius' away from user
         for (const code of uniqueStoreCodes) {
-          // Example: searching within 20 km
           const response = await getPhysicalStores({
             group: code,
-            lat: userLat,
-            lng: userLng,
+            lat: location.lat,
+            lng: location.lng,
             km: kmRadius,
           });
-
-          // If we got at least one store, store its position (or handle multiple as needed)
+          // Merge the new stores into allStores
           if (response.data && response.data.length > 0) {
-            positionMap[code] = response.data[0].position;
-          } else {
-            positionMap[code] = null; // No stores found for that code in the area
+            allStores = [...allStores, ...response.data];
           }
         }
 
-        setStorePositions(positionMap);
+        // If you want to ensure no duplicates (based on store.id), do something like:
+        const uniqueMap = new Map<number, PhysicalStore>();
+        allStores.forEach((store) => {
+          uniqueMap.set(store.id, store);
+        });
+
+        setFetchedStores(Array.from(uniqueMap.values()));
       } catch (error) {
-        console.error('Failed to fetch store positions:', error);
+        console.error('Failed to fetch physical stores:', error);
       }
     }
 
     if (cart.length > 0) {
-      fetchStorePositions();
+      fetchStoresForCart();
     } else {
-      setStorePositions({});
+      // Clear if cart is empty
+      setFetchedStores([]);
     }
-  }, [cart]);
+  }, [cart, location]);
 
-  // Group cart items by store code (but also keep the store name for display)
+  // Group cart items by store code (and store name) for display
   const groupedCart = cart.reduce((acc, item) => {
     const storeCode = item.product.store?.code || 'unknown_code';
     const storeName = item.product.store?.name || 'Ukjent Butikk';
@@ -84,19 +99,21 @@ export default function ShoppingListTab() {
     if (!acc[storeCode]) {
       acc[storeCode] = {
         storeName,
-        items: []
+        items: [],
       };
     }
     acc[storeCode].items.push(item);
     return acc;
   }, {} as Record<string, { storeName: string; items: typeof cart }>);
 
+  // Render
   return (
     <View style={{ flex: 1, padding: 16, backgroundColor: theme.background, paddingTop: 40 }}>
       <Text style={{ fontSize: 22, fontWeight: 'bold', color: theme.text, marginBottom: 16 }}>
         Handleliste
       </Text>
 
+      {/* If no items in cart */}
       {Object.keys(groupedCart).length === 0 ? (
         <Text style={{ color: theme.text, textAlign: 'center', marginTop: 20 }}>
           Ingen produkter i handlelisten.
@@ -107,11 +124,15 @@ export default function ShoppingListTab() {
           keyExtractor={([storeCode]) => storeCode}
           renderItem={({ item }) => {
             const [storeCode, { storeName, items }] = item;
-            const position = storePositions[storeCode] || null;
 
             return (
               <View key={storeCode} style={{ marginBottom: 20 }}>
-                {/* Store Items */}
+                {/* Store name header */}
+                <Text style={{ fontSize: 16, fontWeight: 'bold', color: theme.text, marginBottom: 8 }}>
+                  {storeName}
+                </Text>
+
+                {/* Render items under that store */}
                 {items.map((cartItem) => {
                   const totalPrice = (cartItem.product.current_price * cartItem.quantity).toFixed(2);
                   const productIdStr = cartItem.product.id.toString();
@@ -132,11 +153,13 @@ export default function ShoppingListTab() {
                       }}
                     >
                       {/* Product Name + Delete Icon */}
-                      <View style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        justifyContent: 'space-between'
-                      }}>
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                        }}
+                      >
                         <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                           {/* Checkbox to mark completed */}
                           <TouchableOpacity
@@ -179,12 +202,14 @@ export default function ShoppingListTab() {
                       </View>
 
                       {/* Quantity Selector & Price */}
-                      <View style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        marginTop: 10,
-                      }}>
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          marginTop: 10,
+                        }}
+                      >
                         {/* Quantity Control */}
                         <View
                           style={{
@@ -195,9 +220,10 @@ export default function ShoppingListTab() {
                             borderRadius: 10,
                             paddingHorizontal: 10,
                             paddingVertical: 4,
-                            marginLeft: 40
+                            marginLeft: 40,
                           }}
                         >
+                          {/* Decrease quantity */}
                           <TouchableOpacity onPress={() => removeFromCart(productIdStr)}>
                             <AntDesign name="minus" size={19} color={theme.primary} />
                           </TouchableOpacity>
@@ -207,12 +233,13 @@ export default function ShoppingListTab() {
                               fontSize: 13,
                               fontWeight: 'bold',
                               color: theme.primary,
-                              marginHorizontal: 12
+                              marginHorizontal: 12,
                             }}
                           >
                             {cartItem.quantity}
                           </Text>
 
+                          {/* Increase quantity */}
                           <TouchableOpacity onPress={() => addToCart(cartItem.product)}>
                             <AntDesign name="plus" size={19} color={theme.primary} />
                           </TouchableOpacity>
@@ -220,10 +247,24 @@ export default function ShoppingListTab() {
 
                         {/* Price Display */}
                         <View>
-                          <Text style={{ color: theme.text, fontSize: 16, fontWeight: 'bold', textAlign: 'right' }}>
+                          <Text
+                            style={{
+                              color: theme.text,
+                              fontSize: 16,
+                              fontWeight: 'bold',
+                              textAlign: 'right',
+                            }}
+                          >
                             {totalPrice} kr
                           </Text>
-                          <Text style={{ color: theme.text, fontSize: 13, opacity: 0.6, textAlign: 'right' }}>
+                          <Text
+                            style={{
+                              color: theme.text,
+                              fontSize: 13,
+                              opacity: 0.6,
+                              textAlign: 'right',
+                            }}
+                          >
                             ({cartItem.product.current_price} kr/stk)
                           </Text>
                         </View>
@@ -235,6 +276,13 @@ export default function ShoppingListTab() {
             );
           }}
         />
+      )}
+
+      {/* Show the map of all fetched stores (if any) */}
+      {fetchedStores.length > 0 && (
+        <View style={{ flex: 1, marginTop: 20 }}>
+          <ShopsMap stores={fetchedStores} />
+        </View>
       )}
 
       {/* "Tøm Handleliste" Button */}
