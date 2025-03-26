@@ -26,7 +26,7 @@ class PhysicalStore(BaseModel):
     email: str
     fax: str
     logo: str
-    website: str
+    website: Optional[str]
     detailUrl: str
     position: Position
     openingHours: OpeningHours

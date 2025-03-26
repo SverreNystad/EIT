@@ -167,7 +167,7 @@ export interface PhysicalStore {
   email: string;
   fax: string;
   logo: string;
-  website: string;
+  website: string | undefined;
   detailUrl: string;
   position: Position;
   openingHours: OpeningHours;
