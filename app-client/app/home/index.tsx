@@ -6,6 +6,7 @@ import {
   Easing,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  ScrollView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -94,6 +95,10 @@ export default function HomeScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.background }}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
+        >
         <Animated.View style={{ opacity: fadeAnim, marginTop: 70 }}>
           <SavingsBox co2Saved={co2Saved} moneySaved={moneySaved} />
         </Animated.View>
@@ -134,6 +139,7 @@ export default function HomeScreen() {
             )}
           </>
         )}
+        </ScrollView>
     </View>
   );
 }
