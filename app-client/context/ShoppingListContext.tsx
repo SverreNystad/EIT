@@ -1,28 +1,56 @@
-import React, { createContext, useContext, useState } from 'react';
+// CartContext.tsx
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Product } from '@/types/kassal';
 
-// Define cart item type
-interface CartItem {
+// Define the CartItem type
+export interface CartItem {
   product: Product;
   quantity: number;
 }
 
-// Define cart context type
+// Extend the context type with a setCart method
 interface CartContextType {
   cart: CartItem[];
   addToCart: (product: Product) => void;
   removeFromCart: (productId: string) => void;
-  removeAllFromCart: (productId: string) => void; 
+  removeAllFromCart: (productId: string) => void;
   clearCart: () => void;
+  setCart: React.Dispatch<React.SetStateAction<CartItem[]>>;
 }
 
-// Create the cart context
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [cart, setCart] = useState<CartItem[]>([]);
 
-  // Add item to cart or update quantity
+  // Load cart from AsyncStorage on mount
+  useEffect(() => {
+    async function loadCart() {
+      try {
+        const storedCart = await AsyncStorage.getItem('shoppingCart');
+        if (storedCart) {
+          setCart(JSON.parse(storedCart));
+        }
+      } catch (error) {
+        console.error('Error loading cart:', error);
+      }
+    }
+    loadCart();
+  }, []);
+
+  // Persist cart to AsyncStorage whenever it changes
+  useEffect(() => {
+    async function persistCart() {
+      try {
+        await AsyncStorage.setItem('shoppingCart', JSON.stringify(cart));
+      } catch (error) {
+        console.error('Error saving cart:', error);
+      }
+    }
+    persistCart();
+  }, [cart]);
+
   const addToCart = (product: Product) => {
     setCart((prevCart) => {
       const existingItem = prevCart.find((item) => item.product.id.toString() === product.id.toString());
@@ -38,7 +66,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
-  // Remove one instance of the product
   const removeFromCart = (productId: string) => {
     setCart((prevCart) =>
       prevCart
@@ -47,28 +74,25 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
             ? { ...item, quantity: item.quantity - 1 }
             : item
         )
-        .filter((item) => item.quantity > 0) // Remove item if quantity is 0
+        .filter((item) => item.quantity > 0)
     );
   };
 
-  // Remove all instances of a product at once
   const removeAllFromCart = (productId: string) => {
-    setCart((prevCart) => prevCart.filter(item => item.product.id.toString() !== productId));
+    setCart((prevCart) => prevCart.filter((item) => item.product.id.toString() !== productId));
   };
 
-  // Clear the entire cart
   const clearCart = () => {
-    setCart([]); 
+    setCart([]);
   };
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, removeAllFromCart, clearCart }}>
+    <CartContext.Provider value={{ cart, addToCart, removeFromCart, removeAllFromCart, clearCart, setCart }}>
       {children}
     </CartContext.Provider>
   );
 };
 
-// Custom hook to use cart
 export const useCart = () => {
   const context = useContext(CartContext);
   if (!context) {

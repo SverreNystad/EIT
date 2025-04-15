@@ -6,6 +6,7 @@ import Colors from '../constants/Colors';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { CartProvider } from '@/context/ShoppingListContext';
+import { SavingsProvider } from '@/context/SavingsContext';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { LocationProvider } from '@/context/LocationContext';
@@ -49,6 +50,7 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <SavingsProvider>
       <CartProvider> 
         <LocationProvider>
           <ThemeProvider value={theme}>
@@ -61,6 +63,7 @@ export default function RootLayout() {
           </ThemeProvider>
         </LocationProvider>
       </CartProvider>
+      </SavingsProvider>
     </QueryClientProvider>
   );
 }

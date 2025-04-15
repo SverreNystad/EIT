@@ -1,50 +1,51 @@
+// ShoppingListTab.tsx
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, useColorScheme } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, useColorScheme, Alert } from 'react-native';
 import { AntDesign } from '@expo/vector-icons';
+import { useIsFocused } from '@react-navigation/native';
 
 import Colors from '@/constants/Colors';
 import { useCart } from '@/context/ShoppingListContext';
 import { getPhysicalStores } from '../../services/api';
 import { useLocationContext } from '@/context/LocationContext';
-import ShopsMap from '@/components/ShopMap'; // or wherever your ShopsMap is exported
+import ShopsMap from '@/components/ShopMap';
+import { PhysicalStore } from '@/types/kassal';
 
-import { PhysicalStore } from '@/types/kassal'; // Adjust import path to your types
+import ReminderModal from '@/components/ui/ReminderModal';
+import PurchaseModal from '@/components/ui/PurchaseModal';
+import { useSavings } from '@/context/SavingsContext';
 
 export default function ShoppingListTab() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme] || Colors.light;
-
   const { cart, addToCart, removeFromCart, removeAllFromCart, clearCart } = useCart();
+  const { updateSavings } = useSavings();
+  const { location } = useLocationContext();
+  const isFocused = useIsFocused();
+
   const [completedItems, setCompletedItems] = useState<string[]>([]);
-
-  const { location, errorMsg } = useLocationContext();
-
-  // Collect all found stores here
   const [fetchedStores, setFetchedStores] = useState<PhysicalStore[]>([]);
 
-  // Handle removing all instances of a single product
-  const handleRemoveAllFromCart = (productId: string) => {
-    removeAllFromCart(productId);
-    setCompletedItems((prev) => prev.filter((id) => id !== productId));
-  };
+  // Modal flags
+  const [reminderVisible, setReminderVisible] = useState<boolean>(true);
+  const [purchaseModalVisible, setPurchaseModalVisible] = useState<boolean>(false);
 
+  // New state: control map visibility
+  const [showMap, setShowMap] = useState<boolean>(false);
 
-  // Toggle completed item check
-  const toggleItem = (productId: string) => {
-    setCompletedItems((prev) =>
-      prev.includes(productId) ? prev.filter(id => id !== productId) : [...prev, productId]
-    );
-  };
+  // Reset the reminder each time the tab is focused
+  useEffect(() => {
+    if (isFocused) {
+      setReminderVisible(true);
+    }
+  }, [isFocused]);
 
-
-  // Whenever cart changes, fetch physical stores for each distinct store code
+  // Fetch physical stores when cart or location updates
   useEffect(() => {
     async function fetchStoresForCart() {
       try {
-        // If user location is not ready, skip
         if (!location) return;
 
-        // Gather unique store codes from cart
         const uniqueStoreCodes = Array.from(
           new Set(cart.map((item) => item.product.store?.code))
         ).filter(Boolean) as string[];
@@ -57,7 +58,6 @@ export default function ShoppingListTab() {
         const kmRadius = 20;
         let allStores: PhysicalStore[] = [];
 
-        // For each store chain "code," get up to 'kmRadius' away from user
         for (const code of uniqueStoreCodes) {
           const response = await getPhysicalStores({
             group: code,
@@ -65,18 +65,13 @@ export default function ShoppingListTab() {
             lng: location.lng,
             km: kmRadius,
           });
-          // Merge the new stores into allStores
           if (response.data && response.data.length > 0) {
-            allStores = [...allStores, ...response.data];
+            allStores.push(...response.data);
           }
         }
 
-        // If you want to ensure no duplicates (based on store.id), do something like:
         const uniqueMap = new Map<number, PhysicalStore>();
-        allStores.forEach((store) => {
-          uniqueMap.set(store.id, store);
-        });
-
+        allStores.forEach((store) => uniqueMap.set(store.id, store));
         setFetchedStores(Array.from(uniqueMap.values()));
       } catch (error) {
         console.error('Failed to fetch physical stores:', error);
@@ -86,225 +81,258 @@ export default function ShoppingListTab() {
     if (cart.length > 0) {
       fetchStoresForCart();
     } else {
-      // Clear if cart is empty
       setFetchedStores([]);
     }
   }, [cart, location]);
 
-  // Group cart items by store code (and store name) for display
+  // Group cart items by store for display
   const groupedCart = cart.reduce((acc, item) => {
     const storeCode = item.product.store?.code || 'unknown_code';
     const storeName = item.product.store?.name || 'Ukjent Butikk';
 
     if (!acc[storeCode]) {
-      acc[storeCode] = {
-        storeName,
-        items: [],
-      };
+      acc[storeCode] = { storeName, items: [] };
     }
     acc[storeCode].items.push(item);
     return acc;
   }, {} as Record<string, { storeName: string; items: typeof cart }>);
 
-  // Render
-  return (
-    <View style={{ flex: 1, padding: 16, backgroundColor: theme.background, paddingTop: 40 }}>
-      <Text style={{ fontSize: 22, fontWeight: 'bold', color: theme.text, marginBottom: 16 }}>
-        Handleliste
-      </Text>
+  // Toggle item completed state
+  const toggleItem = (productId: string) => {
+    setCompletedItems((prev) =>
+      prev.includes(productId)
+        ? prev.filter((id) => id !== productId)
+        : [...prev, productId]
+    );
+  };
 
-      {/* If no items in cart */}
-      {Object.keys(groupedCart).length === 0 ? (
-        <Text style={{ color: theme.text, textAlign: 'center', marginTop: 20 }}>
-          Ingen produkter i handlelisten.
-        </Text>
-      ) : (
-        <FlatList
-          data={Object.entries(groupedCart)} // => [ [storeCode, { storeName, items }], ... ]
-          keyExtractor={([storeCode]) => storeCode}
-          renderItem={({ item }) => {
-            const [storeCode, { storeName, items }] = item;
+  // "Kjøp" button handler: require at least one checked item
+  const handlePurchase = () => {
+    if (completedItems.length === 0) {
+      Alert.alert(
+        'Ingen produkter avkrysset',
+        'Vennligst kryss av minst ett produkt før du foretar kjøp.'
+      );
+      return;
+    }
+    setPurchaseModalVisible(true);
+  };
 
-            return (
-              <View key={storeCode} style={{ marginBottom: 20 }}>
-                {/* Store name header */}
-                <Text style={{ fontSize: 16, fontWeight: 'bold', color: theme.text, marginBottom: 8 }}>
-                  {storeName}
-                </Text>
+  // On purchase confirmation, calculate savings and remove checked items
+  const onConfirmPurchase = (rememberedBag: boolean, bagCount: number) => {
+    setPurchaseModalVisible(false);
+    const SAVINGS_PER_ITEM = 5; // kr saved per completed item
+    const BONUS_MONEY_PER_BAG = 6; // kr saved per bag
+    const BONUS_CO2_PER_BAG = 1.58; // kg CO₂ saved per bag
 
-                {/* Render items under that store */}
-                {items.map((cartItem) => {
-                  const totalPrice = (cartItem.product.current_price * cartItem.quantity).toFixed(2);
-                  const productIdStr = cartItem.product.id.toString();
+    const baseMoney = completedItems.length * SAVINGS_PER_ITEM;
+    const bonusMoney = rememberedBag ? bagCount * BONUS_MONEY_PER_BAG : 0;
+    const totalMoneySaved = baseMoney + bonusMoney;
+    const totalCO2Saved = rememberedBag ? bagCount * BONUS_CO2_PER_BAG : 0;
 
-                  return (
-                    <View
-                      key={productIdStr}
-                      style={{
-                        backgroundColor: theme.card,
-                        borderRadius: 16,
-                        padding: 16,
-                        marginBottom: 12,
-                        shadowColor: '#000',
-                        shadowOpacity: 0.1,
-                        shadowRadius: 4,
-                        shadowOffset: { width: 0, height: 2 },
-                        elevation: 3,
-                      }}
-                    >
-                      {/* Product Name + Delete Icon */}
-                      <View
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                        }}
-                      >
-                        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                          {/* Checkbox to mark completed */}
-                          <TouchableOpacity
-                            onPress={() => toggleItem(productIdStr)}
-                            style={{
-                              width: 26,
-                              height: 26,
-                              borderRadius: 6,
-                              borderWidth: 2,
-                              borderColor: completedItems.includes(productIdStr) ? '#4CAF50' : 'gray',
-                              backgroundColor: completedItems.includes(productIdStr) ? '#A5D6A7' : 'transparent',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              marginRight: 10,
-                            }}
-                          >
-                            {completedItems.includes(productIdStr) && (
-                              <AntDesign name="check" size={18} color="white" />
-                            )}
-                          </TouchableOpacity>
+    updateSavings(totalMoneySaved, totalCO2Saved);
 
-                          <Text style={{
-                            flex: 1,
-                            color: theme.text,
-                            fontSize: 16,
-                            fontWeight: 'bold',
-                            textDecorationLine: completedItems.includes(productIdStr) ? 'line-through' : 'none',
-                          }}>
-                            {cartItem.product.name}
-                          </Text>
-                        </View>
+    // Remove the checked items from the cart
+    completedItems.forEach((productId) => {
+      removeAllFromCart(productId);
+    });
+    setCompletedItems([]);
+  };
 
-                        {/* Trash Icon to remove all of this product */}
-                        <TouchableOpacity
-                          onPress={() => handleRemoveAllFromCart(productIdStr)}
-                          style={{ padding: 8 }}
-                        >
-                          <AntDesign name="delete" size={22} color="red" />
-                        </TouchableOpacity>
-                      </View>
-
-                      {/* Quantity Selector & Price */}
-                      <View
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          marginTop: 10,
-                        }}
-                      >
-                        {/* Quantity Control */}
-                        <View
-                          style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            borderWidth: 2,
-                            borderColor: theme.primary,
-                            borderRadius: 10,
-                            paddingHorizontal: 10,
-                            paddingVertical: 4,
-                            marginLeft: 40,
-                          }}
-                        >
-                          {/* Decrease quantity */}
-                          <TouchableOpacity onPress={() => removeFromCart(productIdStr)}>
-                            <AntDesign name="minus" size={19} color={theme.primary} />
-                          </TouchableOpacity>
-
-                          <Text
-                            style={{
-                              fontSize: 13,
-                              fontWeight: 'bold',
-                              color: theme.primary,
-                              marginHorizontal: 12,
-                            }}
-                          >
-                            {cartItem.quantity}
-                          </Text>
-
-                          {/* Increase quantity */}
-                          <TouchableOpacity onPress={() => addToCart(cartItem.product)}>
-                            <AntDesign name="plus" size={19} color={theme.primary} />
-                          </TouchableOpacity>
-                        </View>
-
-                        {/* Price Display */}
-                        <View>
-                          <Text
-                            style={{
-                              color: theme.text,
-                              fontSize: 16,
-                              fontWeight: 'bold',
-                              textAlign: 'right',
-                            }}
-                          >
-                            {totalPrice} kr
-                          </Text>
-                          <Text
-                            style={{
-                              color: theme.text,
-                              fontSize: 13,
-                              opacity: 0.6,
-                              textAlign: 'right',
-                            }}
-                          >
-                            ({cartItem.product.current_price} kr/stk)
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
-                  );
-                })}
-              </View>
-            );
-          }}
-        />
-      )}
-
-      {/* Show the map of all fetched stores (if any) */}
-      {fetchedStores.length > 0 && (
-        <View style={{ flex: 1, marginTop: 20 }}>
-          <ShopsMap stores={fetchedStores} />
-        </View>
-      )}
-
-      {/* "Tøm Handleliste" Button */}
-      {cart.length > 0 && (
-        <TouchableOpacity
-          onPress={clearCart}
+  // Render each group (by store)
+  const renderGroup = ({ item }: { item: [string, { storeName: string; items: typeof cart }] }) => {
+    const [storeCode, { storeName, items }] = item;
+    return (
+      <View key={storeCode} style={{ marginBottom: 20 }}>
+        <Text
           style={{
-            backgroundColor: '#D72638',
+            fontSize: 16,
+            fontWeight: 'bold',
+            color: theme.text,
+            marginBottom: 8,
+          }}
+        >
+          {storeName}
+        </Text>
+        {items.map((cartItem) => {
+          const totalPrice = (cartItem.product.current_price * cartItem.quantity).toFixed(2);
+          const productIdStr = cartItem.product.id.toString();
+
+          return (
+            <View
+              key={productIdStr}
+              style={{
+                backgroundColor: theme.card,
+                borderRadius: 16,
+                padding: 16,
+                marginBottom: 12,
+                shadowColor: '#000',
+                shadowOpacity: 0.1,
+                shadowRadius: 4,
+                shadowOffset: { width: 0, height: 2 },
+                elevation: 3,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                  <TouchableOpacity
+                    onPress={() => toggleItem(productIdStr)}
+                    style={{
+                      width: 26,
+                      height: 26,
+                      borderRadius: 6,
+                      borderWidth: 2,
+                      borderColor: completedItems.includes(productIdStr) ? '#4CAF50' : 'gray',
+                      backgroundColor: completedItems.includes(productIdStr) ? '#A5D6A7' : 'transparent',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginRight: 10,
+                    }}
+                  >
+                    {completedItems.includes(productIdStr) && (
+                      <AntDesign name="check" size={18} color="white" />
+                    )}
+                  </TouchableOpacity>
+                  <Text
+                    style={{
+                      flex: 1,
+                      color: theme.text,
+                      fontSize: 16,
+                      fontWeight: 'bold',
+                      textDecorationLine: completedItems.includes(productIdStr) ? 'line-through' : 'none',
+                    }}
+                  >
+                    {cartItem.product.name}
+                  </Text>
+                </View>
+                <TouchableOpacity onPress={() => removeAllFromCart(productIdStr)} style={{ padding: 8 }}>
+                  <AntDesign name="delete" size={22} color="red" />
+                </TouchableOpacity>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    borderWidth: 2,
+                    borderColor: theme.primary,
+                    borderRadius: 10,
+                    paddingHorizontal: 10,
+                    paddingVertical: 4,
+                    marginLeft: 40,
+                  }}
+                >
+                  <TouchableOpacity onPress={() => removeFromCart(productIdStr)}>
+                    <AntDesign name="minus" size={19} color={theme.primary} />
+                  </TouchableOpacity>
+                  <Text style={{ fontSize: 13, fontWeight: 'bold', color: theme.primary, marginHorizontal: 12 }}>
+                    {cartItem.quantity}
+                  </Text>
+                  <TouchableOpacity onPress={() => addToCart(cartItem.product)}>
+                    <AntDesign name="plus" size={19} color={theme.primary} />
+                  </TouchableOpacity>
+                </View>
+                <View>
+                  <Text style={{ color: theme.text, fontSize: 16, fontWeight: 'bold', textAlign: 'right' }}>
+                    {totalPrice} kr
+                  </Text>
+                  <Text style={{ color: theme.text, fontSize: 13, opacity: 0.6, textAlign: 'right' }}>
+                    ({cartItem.product.current_price} kr/stk)
+                  </Text>
+                </View>
+              </View>
+            </View>
+          );
+        })}
+      </View>
+    );
+  };
+
+  return (
+    <View style={{ flex: 1, backgroundColor: theme.background, paddingTop: 40, paddingHorizontal: 16 }}>
+      <Text style={{ fontSize: 22, fontWeight: 'bold', color: theme.text, marginBottom: 16 }}>Handleliste</Text>
+      <ReminderModal visible={reminderVisible} onDismiss={() => setReminderVisible(false)} />
+      
+      {/* Scrollable list container */}
+      <View style={{ flex: 1 }}>
+        {Object.keys(groupedCart).length === 0 ? (
+          <Text style={{ color: theme.text, textAlign: 'center', marginTop: 20 }}>
+            Ingen produkter i handlelisten.
+          </Text>
+        ) : (
+          <FlatList
+            data={Object.entries(groupedCart)}
+            keyExtractor={([storeCode]) => storeCode}
+            renderItem={renderGroup}
+            contentContainerStyle={{ paddingBottom: 20 }}
+          />
+        )}
+      </View>
+      
+      {/* Bottom fixed controls */}
+      <View style={{ marginVertical: 16 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
+          {cart.length > 0 && (
+            <TouchableOpacity
+              onPress={handlePurchase}
+              style={{
+                backgroundColor: '#4CAF50',
+                padding: 16,
+                borderRadius: 12,
+                alignItems: 'center',
+                flex: 1,
+                marginRight: 10,
+              }}
+            >
+              <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>Kjøp</Text>
+            </TouchableOpacity>
+          )}
+          {cart.length > 0 && (
+            <TouchableOpacity
+              onPress={clearCart}
+              style={{
+                backgroundColor: '#D72638',
+                padding: 16,
+                borderRadius: 12,
+                alignItems: 'center',
+                flex: 1,
+              }}
+            >
+              <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>Tøm Handleliste</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        <TouchableOpacity
+          onPress={() => setShowMap((prev) => !prev)}
+          style={{
+            backgroundColor: '#007bff',
             padding: 16,
             borderRadius: 12,
             alignItems: 'center',
             flexDirection: 'row',
             justifyContent: 'center',
-            marginTop: 20,
           }}
         >
-          <AntDesign name="delete" size={22} color="white" style={{ marginRight: 10 }} />
+          <AntDesign name="enviromento" size={20} color="white" style={{ marginRight: 8 }} />
           <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>
-            Tøm Handleliste
+            {showMap ? 'Skjul butikker' : 'Finn butikker nær deg'}
           </Text>
         </TouchableOpacity>
+      </View>
+      
+      {/* Fixed map area */}
+      {showMap && (
+        <View style={{ height: 250, marginHorizontal: 16, marginBottom: 16 }}>
+          <ShopsMap stores={fetchedStores} />
+        </View>
       )}
+      
+      {/* Purchase modal for bag information */}
+      <PurchaseModal
+        visible={purchaseModalVisible}
+        onConfirm={onConfirmPurchase}
+        onCancel={() => setPurchaseModalVisible(false)}
+      />
     </View>
   );
 }

@@ -1,3 +1,4 @@
+// HomeScreen.tsx
 import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
@@ -20,11 +21,10 @@ import { getProducts } from '@/services/api';
 import SavingsBox from '@/components/ui/SavingsBox';
 import Section from '@/components/ui/Section';
 import { Product, ProductsResponse } from '@/types/kassal';
+import { useSavings } from '@/context/SavingsContext';
 
-// Define a fixed cart icon position for the “fly” animation
 const CART_ICON_POSITION = { x: 125, y: 900 };
 
-// Define navigation stack types
 type HomeStackParamList = {
   hjem: undefined;
   tilbud: undefined;
@@ -32,7 +32,6 @@ type HomeStackParamList = {
   produkt: { product: Product };
 };
 
-// Navigation typing
 type HomeScreenNavigationProp = StackNavigationProp<HomeStackParamList, 'hjem'>;
 
 export default function HomeScreen() {
@@ -47,7 +46,6 @@ export default function HomeScreen() {
   const [overlayImage, setOverlayImage] = useState<string | null>(null);
   const [isOfferAnimation, setIsOfferAnimation] = useState(false);
 
-  // Pagination state 
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
 
@@ -61,15 +59,12 @@ export default function HomeScreen() {
     queryFn: () => getProducts({ page: currentPage, size: pageSize }),
   });
 
-  // Destructure products and meta data from the response
   const products = productsResponse?.data ?? [];
   const meta = productsResponse?.meta;
 
-  // Fake savings data (replace with real API data if available)
-  const co2Saved = 12.3;
-  const moneySaved = 320;
+  // Use live savings values
+  const { moneySaved, co2Saved } = useSavings();
 
-  // Fade in animation 
   useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
@@ -79,17 +74,13 @@ export default function HomeScreen() {
     }).start();
   }, [fadeAnim]);
 
-  // “Fly to cart” animation logic from snippet #2
   const flyToCart = (layout: LayoutRectangle, imageUri: string, isOffer: boolean) => {
     setIsOfferAnimation(isOffer);
     setOverlayVisible(true);
     setOverlayImage(imageUri);
-
-    // Set the initial position of the animated image to the tapped card
     animatedPosition.setValue({ x: layout.x, y: layout.y });
     animatedScale.setValue(1);
 
-    // Animate to the cart icon
     Animated.parallel([
       Animated.timing(animatedPosition, {
         toValue: { x: CART_ICON_POSITION.x, y: CART_ICON_POSITION.y },
@@ -102,43 +93,31 @@ export default function HomeScreen() {
         useNativeDriver: true,
       }),
     ]).start(() => {
-      // Once animation finishes, hide the overlay
       setOverlayVisible(false);
       setOverlayImage(null);
     });
   };
 
-  // Determine the overlay's absolute starting position
-  // (can customize these to differentiate offer vs normal)
   const initialLeft = isOfferAnimation ? 100 : 100;
   const initialTop = isOfferAnimation ? 300 : 550;
 
-  // Navigate to product detail screen
   const handlePressProduct = (product: Product) => {
     navigation.navigate('produkt', { product });
   };
 
-  // Handle potential error
   if (isError) {
     console.error('Failed to load data:', error);
-    // Optionally, you could render an error message here.
   }
 
-  // Infinite scroll/pagination logic (horizontal example in Section)
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
-
-    // If the user has scrolled close to the end (horizontally)
-    if (
-      contentOffset.x + layoutMeasurement.width >= contentSize.width - 50
-    ) {
+    if (contentOffset.x + layoutMeasurement.width >= contentSize.width - 50) {
       setCurrentPage((prevPage) => prevPage + 1);
     }
   };
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.background }}>
-      {/* Animated overlay for the fly-to-cart effect */}
       {overlayVisible && overlayImage && (
         <Animated.View
           style={{
@@ -201,8 +180,7 @@ export default function HomeScreen() {
                   alignItems: 'center',
                   marginVertical: 20,
                 }}
-              >
-              </View>
+              ></View>
             )}
           </>
         )}
