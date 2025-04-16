@@ -5,7 +5,7 @@ import { useRef } from "react";
 import { CalendarIcon, FileTextIcon } from "@radix-ui/react-icons";
 import { BellIcon, Share2Icon } from "lucide-react";
 
-import { Calendar } from "@/components/ui/calendar";
+import { MyDatePicker } from "@/components/ui/MyDatePicker";
 import { cn } from "@/lib/utils";
 
 import { BentoCard, BentoGrid } from "@/registry/magicui/bento-grid";
@@ -23,25 +23,18 @@ import { useTheme } from "next-themes";
 // Example files array
 const files = [
   {
-    name: "bitcoin.pdf",
-    body: "Bitcoin is a cryptocurrency invented in 2008 by an unknown person or group of people using the name Satoshi Nakamoto.",
+    name: "Sorterer etter butikker",
+    body: "Du kan enkelt se hva du skal handle i hver enkelt butikk",
   },
   {
-    name: "finances.xlsx",
-    body: "A spreadsheet or worksheet is a file made of rows and columns that help sort data, arrange data easily, and calculate numerical data.",
+    name: "Se butikker nær deg",
+    body: "Kartfunksjon som viser butikker nær deg",
   },
   {
-    name: "logo.svg",
-    body: "Scalable Vector Graphics is an Extensible Markup Language-based vector image format for two-dimensional graphics with support for interactivity and animation.",
+    name: "Berenger penger og CO2 spart",
+    body: "Med en enkelt klikk beregnes hvor mye penger du har spart samt CO2 spart avhengig om du husket pose eller ikke",
   },
-  {
-    name: "keys.gpg",
-    body: "GPG keys are used to encrypt and decrypt email, files, directories, and whole disk partitions and to authenticate messages.",
-  },
-  {
-    name: "seed.txt",
-    body: "A seed phrase, seed recovery phrase or backup seed phrase is a list of words which store all the information needed to recover Bitcoin funds on-chain.",
-  },
+  
 ];
 
 export default function Home() {
@@ -52,12 +45,72 @@ export default function Home() {
 
   const features = [
     {
-      Icon: FileTextIcon,
-      name: "Save your files",
-      description: "We automatically save your files as you type.",
+      Icon: CalendarIcon,
+      name: "Ukens tilbud",
+      description: "Hold deg oppdatert på de aller ferskeste og rimeligste ukestilbudene",
+      className: "col-span-3 lg:col-span-1 relative", // make sure to set relative here
       href: "#",
-      cta: "Learn more",
+      cta: "Se mer",
+      style: { backgroundColor: "#f3f4f8" },
+      background: (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div
+            className="origin-center"
+            style={{ transform: "scale(0.7)", filter: "blur(0.5px)" }} // adjust the blur amount as needed
+          >
+            <MyDatePicker />
+          </div>
+        </div>
+      ),
+    },
+    {
+      Icon: BellIcon,
+      name: "Penger og CO2 Spart!",
+      description: "Se hvor mye penger og CO₂ du sparer basert på hva du kjøper og om du husker egen pose",
+      href: "#",
+      cta: "Se mer",
+      className: "col-span-3 lg:col-span-2 relative",
+      style: { backgroundColor: "#f3f4f8" },
+      background: (
+        <div className="absolute inset-0 flex justify-center items-center">
+          <img
+            src="/spart.jpeg"
+            alt="Description of the image"
+            className="object-cover"
+            style={{ width: "550px", height: "200px" }}
+          />
+        </div>
+      ),
+    },
+    {
+      Icon: Share2Icon,
+      name: "Personlige oppskrifter",
+      description: "Få skreddersydde oppskrifter for deg",
+      href: "#",
+      cta: "Se mer",
+      className: "col-span-3 lg:col-span-2",
+      style: { backgroundColor: "#f3f4f8" },
+      // Provide the required refs for AnimatedBeam
+      background: (
+        <div className="absolute inset-0 flex justify-center items-center">
+          <img
+            src="/rec.jpeg"
+            alt="Description of the image"
+            className="object-cover"
+            style={{ width: "600px", height: "200px", filter: "blur(0.5px)" }}
+            
+          />
+        </div>
+      ),
+    },
+    {
+      Icon: FileTextIcon,
+      name: "Handleliste",
+      description: "Lag handleliste med de billigste produktene per butikk",
+      href: "#",
+      cta: "Se mer",
       className: "col-span-3 lg:col-span-1",
+      style: { backgroundColor: "#f3f4f8" },
       background: (
         <Marquee
           pauseOnHover
@@ -84,66 +137,6 @@ export default function Home() {
             </figure>
           ))}
         </Marquee>
-      ),
-    },
-    {
-      Icon: BellIcon,
-      name: "Notifications",
-      description: "Get notified when something happens.",
-      href: "#",
-      cta: "Learn more",
-      className: "col-span-3 lg:col-span-2",
-      // Provide children so AnimatedList doesn't complain
-      background: (
-        <AnimatedListDemo className="absolute right-2 top-4 h-[300px] w-full scale-75 border-none transition-all duration-300 ease-out [mask-image:linear-gradient(to_top,transparent_10%,#000_100%)] group-hover:scale-90">
-          <div className="p-4 bg-white/10 rounded-lg text-white">Hello!</div>
-          <div className="p-4 bg-white/10 rounded-lg text-white">Another item</div>
-        </AnimatedListDemo>
-      ),
-    },
-    {
-      Icon: Share2Icon,
-      name: "Integrations",
-      description: "Supports 100+ integrations and counting.",
-      href: "#",
-      cta: "Learn more",
-      className: "col-span-3 lg:col-span-2",
-      // Provide the required refs for AnimatedBeam
-      background: (
-        <section ref={containerRef} className="relative w-full h-full">
-          <div
-            ref={fromRef}
-            className="absolute left-4 top-4 w-6 h-6 bg-green-500 rounded-full"
-            title="From"
-          />
-          <div
-            ref={toRef}
-            className="absolute right-4 bottom-4 w-6 h-6 bg-blue-500 rounded-full"
-            title="To"
-          />
-
-          <AnimatedBeamMultipleOutputDemo
-            className="absolute right-2 top-4 h-[300px] border-none transition-all duration-300 ease-out [mask-image:linear-gradient(to_top,transparent_10%,#000_100%)] group-hover:scale-105"
-            containerRef={containerRef}
-            fromRef={fromRef}
-            toRef={toRef}
-          />
-        </section>
-      ),
-    },
-    {
-      Icon: CalendarIcon,
-      name: "Calendar",
-      description: "Use the calendar to filter your files by date.",
-      className: "col-span-3 lg:col-span-1",
-      href: "#",
-      cta: "Learn more",
-      background: (
-        <Calendar
-          mode="single"
-          selected={new Date(2022, 4, 11, 0, 0, 0)}
-          className="absolute right-0 top-10 origin-top scale-75 rounded-md border transition-all duration-300 ease-out [mask-image:linear-gradient(to_top,transparent_40%,#000_100%)] group-hover:scale-90"
-        />
       ),
     },
   ];

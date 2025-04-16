@@ -1,6 +1,6 @@
 const Colors: Record<'light' | 'dark', { background: string; text: string; primary: string; accent: string; card: string }> = {
   light: {
-    background: '#f8f5e1', 
+    background: '#f3f4f8', //#f8f5e1
     text: '#121417',
     primary: '#a52a2a', //+ knapper
     accent: '#009e60',  //spareprisen
