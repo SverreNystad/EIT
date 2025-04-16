@@ -20,6 +20,8 @@ import { ShimmerButton } from "@/components/magicui/shimmer-button";
 import { Particles } from "@/components/magicui/particles";
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
+import { Navbar } from "@/components/ui/Navbar";
+
 // Example files array
 const files = [
   {
@@ -43,6 +45,8 @@ export default function Home() {
   const fromRef = useRef<HTMLDivElement>(null);
   const toRef = useRef<HTMLDivElement>(null);
 
+  
+      
   const features = [
     {
       Icon: CalendarIcon,
@@ -157,13 +161,15 @@ export default function Home() {
         color={color}
         refresh
       />
+      <Navbar />
+      <div className="pt-20">
       <HeroSection/>
       <BentoGrid>
       {features.map((feature, idx) => (
         <BentoCard key={idx} {...feature} />
       ))}
     </BentoGrid>
-  
+    </div>
     </main>
   );
 }
