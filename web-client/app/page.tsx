@@ -9,18 +9,14 @@ import { MyDatePicker } from "@/components/ui/MyDatePicker";
 import { cn } from "@/lib/utils";
 
 import { BentoCard, BentoGrid } from "@/registry/magicui/bento-grid";
-import { Marquee } from "@/registry/magicui/marquee";
-import { AnimatedBeam as AnimatedBeamMultipleOutputDemo } from "@/registry/magicui/animated-beam";
-import { AnimatedList as AnimatedListDemo } from "@/registry/magicui/animated-list";
-import { AuroraText } from "@/registry/magicui/aurora-text";
-import Iphone15Pro from "@/registry/magicui/iphone-15-pro";
+import {Marquee} from "@/registry/magicui/marquee"
 import HeroSection from "@/components/ui/Herosection";
-import { RainbowButton } from "@/registry/magicui/rainbow-button";
-import { ShimmerButton } from "@/components/magicui/shimmer-button";
+import Reviews from "@/components/ui/reviews";
 import { Particles } from "@/components/magicui/particles";
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import { Navbar } from "@/components/ui/Navbar";
+
 
 // Example files array
 const files = [
@@ -118,7 +114,7 @@ export default function Home() {
       background: (
         <Marquee
           pauseOnHover
-          className="absolute top-10 [--duration:20s] [mask-image:linear-gradient(to_top,transparent_40%,#000_100%)]"
+          className="absolute top-10 [--duration:0s] [mask-image:linear-gradient(to_top,transparent_40%,#000_100%)]"
         >
           {files.map((f, idx) => (
             <figure
@@ -169,6 +165,11 @@ export default function Home() {
         <BentoCard key={idx} {...feature} />
       ))}
     </BentoGrid>
+    <p className="mt-10 mb-10 text-3xl text-gray-700 mb-6">
+        Kundeanmeldelser
+        </p>
+    <Reviews/>
+    
     </div>
     </main>
   );
