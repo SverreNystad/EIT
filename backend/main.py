@@ -1,8 +1,9 @@
-from typing import Optional, Union
+from typing import Optional, Union, List
 
 import pandas as pd
 from fastapi import FastAPI, HTTPException, Query, Path
 from fastapi.middleware.cors import CORSMiddleware
+
 from src.configuration import KASSAL_API_KEY
 from src.kassal.kassal_service import KassalAPI
 from src.kassal.models_physical_stores import PhysicalStoresResponse, PhysicalStore
@@ -11,6 +12,40 @@ from src.kassal.models_products_ean import ProductsByEanData
 from src.kassal.models_products_compare import ProductsCompareData
 from src.recommenders.meal_plan_service import generate_meal_plan, suggest_recipes
 from src.recommenders.models import MealRecommendationRequest, _transform_df_to_pydantic
+from src.sales_dao import load_product_sales
+from src.sales_service import ProductSales, Sale
+
+# Load sales data once at startup (uses default path inside load_product_sales)
+try:
+    _loaded = load_product_sales()
+    _sales_list: List[ProductSales] = (
+        _loaded if isinstance(_loaded, list) else [_loaded]
+    )
+except Exception:
+    _sales_list = []
+
+
+def enrich_products_with_sales(
+    products: List[Product], sales_list: List[ProductSales]
+) -> List[Product]:
+    """
+    For each product in 'products', match by substring between sale item names
+    and product.name, attaching the first matching Sale found.
+    """
+    # Flatten all sales into a name->Sale map
+    sale_map: dict[str, Sale] = {}
+    for ps in sales_list:
+        for sp in ps.products.products:
+            sale_map[sp.name.lower()] = sp.sale
+
+    # Attach sale info for each product by substring match
+    for p in products:
+        pname = p.name.lower()
+        for sale_name, sale_obj in sale_map.items():
+            if sale_name in pname:
+                p.sale = sale_obj
+                break
+    return products
 
 
 app = FastAPI(
@@ -18,7 +53,6 @@ app = FastAPI(
     description="Backend for EiT project",
     version="0.0.2",
 )
-
 
 origins = [
     "http://localhost",
@@ -34,7 +68,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 kassal_api = KassalAPI(token=KASSAL_API_KEY)
 
@@ -54,10 +87,9 @@ async def get_physical_stores(
     group: Optional[str] = Query(None, description="Group filter"),
 ):
     try:
-        result = kassal_api.get_physical_stores(
+        return kassal_api.get_physical_stores(
             search=search, page=page, size=size, lat=lat, lng=lng, km=km, group=group
         )
-        return result
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -67,8 +99,7 @@ async def get_physical_store_by_id(
     store_id: str = Path(..., description="ID of the physical store")
 ):
     try:
-        result = kassal_api.get_physical_store_by_id(store_id)
-        return result
+        return kassal_api.get_physical_store_by_id(store_id)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -105,6 +136,8 @@ async def get_products(
             exclude_without_ean=exclude_without_ean,
             sort=sort,
         )
+        # Enrich all products in one call
+        enrich_products_with_sales(result.data, _sales_list)
         return result
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -115,17 +148,10 @@ async def get_product_by_id(
     product_id: int = Path(..., description="ID of the product")
 ):
     try:
-        result = kassal_api.get_product_by_id(product_id)
-        return result
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-
-@app.get("/products/ean/{ean}", response_model=ProductsByEanData)
-async def get_product_by_ean(ean: str = Path(..., description="EAN of the product")):
-    try:
-        result = kassal_api.get_product_by_ean(ean)
-        return result
+        prod = kassal_api.get_product_by_id(product_id)
+        # Single product enrichment
+        enrich_products_with_sales([prod], _sales_list)
+        return prod
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -135,8 +161,9 @@ async def find_product_by_url_single(
     url: str = Query(..., description="URL of the product to find")
 ):
     try:
-        result = kassal_api.find_product_by_url_single(url)
-        return result
+        prod = kassal_api.find_product_by_url_single(url)
+        enrich_products_with_sales([prod], _sales_list)
+        return prod
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -146,8 +173,10 @@ async def find_product_by_url_compare(
     url: str = Query(..., description="URL of the product for comparison")
 ):
     try:
-        result = kassal_api.find_product_by_url_compare(url)
-        return result
+        data = kassal_api.find_product_by_url_compare(url)
+        # Bulk enrichment
+        enrich_products_with_sales(data, _sales_list)
+        return data
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

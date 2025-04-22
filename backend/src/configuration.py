@@ -8,6 +8,7 @@ KASSAL_API_KEY = os.environ.get("KASSAL_API_KEY")
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
 GOOGLE_REDIRECT_URI = os.environ.get("GOOGLE_REDIRECT_URI")
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
 if not KASSAL_API_KEY:
     raise Exception("KASSAL_API_KEY environment variable is not set.")

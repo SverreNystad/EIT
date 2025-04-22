@@ -1,6 +1,8 @@
 from typing import List, Optional
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
+
+from src.sales_service import Sale
 
 
 class PriceHistory(BaseModel):
@@ -29,6 +31,9 @@ class Store(BaseModel):
 
 
 class Product(BaseModel):
+    # allow unknown extra fields (e.g. 'sale') without validation errors
+    model_config = ConfigDict(extra="ignore")
+
     id: int
     name: str
     brand: Optional[str]
@@ -48,6 +53,12 @@ class Product(BaseModel):
     nutrition: List[Nutrition]
     created_at: datetime
     updated_at: datetime
+
+    # new optional field for sale info
+    sale: Optional[Sale] = Field(
+        None,
+        description="Optional sale information (price, percentage, or n-for-price)",
+    )
 
 
 class ProductsLinks(BaseModel):
