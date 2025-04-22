@@ -1,4 +1,3 @@
-// SingleProduct.tsx
 import React, { useState } from 'react';
 import {
   View,
@@ -6,272 +5,239 @@ import {
   Image,
   Dimensions,
   StyleSheet,
-  TouchableOpacity,
   ScrollView,
+  useWindowDimensions,
+  useColorScheme,
+  TouchableOpacity,
 } from 'react-native';
 import { useRoute, RouteProp } from '@react-navigation/native';
-import { useColorScheme } from 'react-native';
+import { TabView, TabBar } from 'react-native-tab-view';
 import { getTheme } from '@/constants/Colors';
 import { Product } from '@/types/kassal';
-import PriceHistoryChart from '@/components/PriceHistoryChart'; // <-- Import the chart
+import PriceHistoryChart from '@/components/PriceHistoryChart';
+import { useCart } from '@/context/ShoppingListContext';
+import { AntDesign } from '@expo/vector-icons';
 
 type HomeStackParamList = {
   singleProduct: { product: Product };
 };
-
 type SingleProductRouteProp = RouteProp<HomeStackParamList, 'singleProduct'>;
-
-const TABS = [
-  'Oversikt',
-  'Pris historikk',
-  'Ingredienser og allergener',
-  'Næringsinnhold',
-  'Butikkinfo',
-];
+type Route = { key: string; title: string };
 
 const { width } = Dimensions.get('window');
 
 export default function SingleProduct() {
   const colorScheme = useColorScheme() || 'light';
   const theme = getTheme(colorScheme);
+  const layout = useWindowDimensions();
 
   const route = useRoute<SingleProductRouteProp>();
   const { product } = route.params;
 
-  // Active tab state
-  const [activeTab, setActiveTab] = useState<string>(TABS[0]);
+  const { addToCart } = useCart();
 
-  // Simple tab switching logic
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 'Oversikt':
+  const [index, setIndex] = useState(0);
+  const [routes] = useState<Route[]>([
+    { key: 'oversikt', title: 'Oversikt' },
+    { key: 'prisHistorikk', title: 'Pris historikk' },
+    { key: 'ingredienser', title: 'Ingredienser og allergener' },
+    { key: 'naringsinnhold', title: 'Næringsinnhold' },
+  ]);
+
+  const renderScene = ({ route }: { route: Route }) => {
+    switch (route.key) {
+      case 'oversikt':
         return (
-          <View style={styles.tabContainer}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              {product.name}
-            </Text>
-            {product.brand && (
-              <Text style={{ color: theme.text }}>Brand: {product.brand}</Text>
-            )}
-            {product.vendor && (
-              <Text style={{ color: theme.text }}>Vendor: {product.vendor}</Text>
-            )}
-            {product.description && (
-              <Text style={[styles.sectionBody, { color: theme.text }]}>
-                {product.description}
-              </Text>
-            )}
-            <Text style={[styles.sectionSubtitle, { color: theme.text }]}>
-              Weight: {product.weight} {product.weight_unit}
-            </Text>
-            <Text style={[styles.sectionSubtitle, { color: theme.text }]}>
-              EAN: {product.ean || 'N/A'}
-            </Text>
-            <Text style={[styles.sectionSubtitle, { color: theme.text }]}>
-              Created At: {new Date(product.created_at).toLocaleDateString()}
-            </Text>
-          </View>
-        );
-      case 'Pris historikk':
-        return (
-          <View style={styles.tabContainer}>
-            {product.price_history && product.price_history.length > 0 ? (
-              <>
-                {/* Render the Chart */}
-                <PriceHistoryChart data={product.price_history} />
-              </>
-            ) : (
-              <Text style={[styles.sectionBody, { color: theme.text }]}>
-                Ingen Pris historikk, tilgjengelig.
-              </Text>
-            )}
-          </View>
-        );
-      case 'Ingredienser og allergener':
-        return (
-          <View style={styles.tabContainer}>
-            <Text style={[styles.sectionSubtitle, { color: theme.text }]}>
-              Ingredienser:
-            </Text>
-            <Text style={[styles.sectionBody, { color: theme.text }]}>
-              {product.ingredients || 'ingen ingredients tilgjengelig.'}
-            </Text>
-            {product.allergens && product.allergens.length > 0 && (
-              <>
-                <Text
-                  style={[
-                    styles.sectionSubtitle,
-                    { color: theme.text, marginTop: 12 },
-                  ]}
-                >
-                  Allergener:
-                </Text>
-                {product.allergens.map((allergen, idx) => (
-                  <Text key={idx} style={{ color: theme.text }}>
-                    • {allergen.display_name} ({allergen.contains})
+          <ScrollView style={styles.tabContent}>
+            <View style={styles.gridContainer}>
+              {product.brand && (
+                <View style={styles.gridItem}>
+                  <Text style={styles.infoLabel}>Merke</Text>
+                  <Text style={[styles.infoValue, { color: theme.text }]}>
+                    {product.brand}
                   </Text>
-                ))}
-              </>
-            )}
-          </View>
-        );
-      case 'Næringsinnhold':
-        return (
-          <View style={styles.tabContainer}>
-            {product.nutrition && product.nutrition.length > 0 ? (
-              product.nutrition.map((nut, idx) => (
-                <Text key={idx} style={[styles.sectionBody, { color: theme.text }]}>
-                  {nut.display_name}: {nut.amount}
-                  {nut.unit}
+                </View>
+              )}
+              {product.vendor && (
+                <View style={styles.gridItem}>
+                  <Text style={styles.infoLabel}>Leverandør</Text>
+                  <Text style={[styles.infoValue, { color: theme.text }]}>
+                    {product.vendor}
+                  </Text>
+                </View>
+              )}
+              {product.weight && (
+                <View style={styles.gridItem}>
+                  <Text style={styles.infoLabel}>Vekt</Text>
+                  <Text style={[styles.infoValue, { color: theme.text }]}>
+                    {product.weight} {product.weight_unit}
+                  </Text>
+                </View>
+              )}
+              <View style={styles.gridItem}>
+                <Text style={styles.infoLabel}>EAN</Text>
+                <Text style={[styles.infoValue, { color: theme.text }]}>
+                  {product.ean || 'N/A'}
                 </Text>
-              ))
-            ) : (
-              <Text style={[styles.sectionBody, { color: theme.text }]}>
-                Ingen næringsinnhold tilgjengelig.
-              </Text>
-            )}
-          </View>
+              </View>
+              <View style={styles.gridItem}>
+                <Text style={styles.infoLabel}>Opprettet</Text>
+                <Text style={[styles.infoValue, { color: theme.text }]}>
+                  {new Date(product.created_at).toLocaleDateString('no-NO')}
+                </Text>
+              </View>
+              {product.description && (
+                <View style={styles.gridItemFull}>
+                  <Text
+                    style={[
+                      styles.sectionBody,
+                      { color: theme.text, marginTop: 8 },
+                    ]}
+                  >
+                    {product.description}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </ScrollView>
         );
-      case 'Butikkinfo':
+      case 'prisHistorikk':
         return (
-          <View style={styles.tabContainer}>
-            <Text style={[styles.sectionSubtitle, { color: theme.text }]}>
-              Store: {product.store?.name}
-            </Text>
-            <Text style={[styles.sectionBody, { color: theme.text }]}>
-              URL: {product.store?.url}
-            </Text>
-            {product.store?.logo && (
-              <Image
-                source={{ uri: product.store.logo }}
-                style={{
-                  width: 100,
-                  height: 40,
-                  marginTop: 10,
-                  resizeMode: 'contain',
-                }}
-              />
-            )}
-          </View>
+          <ScrollView style={styles.tabContent}>
+            <View style={styles.tabContainer}>
+              {product.price_history && product.price_history.length > 0 ? (
+                <PriceHistoryChart data={product.price_history} />
+              ) : (
+                <Text style={[styles.sectionBody, { color: theme.text }]}>Ingen pris historikk tilgjengelig.</Text>
+              )}
+            </View>
+          </ScrollView>
+        );
+      case 'ingredienser':
+        return (
+          <ScrollView style={styles.tabContent}>
+            <View style={styles.tabContainer}>
+              <Text style={[styles.sectionSubtitle, { color: theme.text }]}>Ingredienser:</Text>
+              <Text style={[styles.sectionBody, { color: theme.text }]}>
+                {product.ingredients || 'Ingen ingredients tilgjengelig.'}
+              </Text>
+              {product.allergens && product.allergens.length > 0 && (
+                <>
+                  <Text
+                    style={[
+                      styles.sectionSubtitle,
+                      { color: theme.text, marginTop: 12 },
+                    ]}
+                  >
+                    Allergener:
+                  </Text>
+                  {product.allergens.map((allergen, idx) => (
+                    <Text key={idx} style={{ color: theme.text }}>
+                      • {allergen.display_name} ({allergen.contains})
+                    </Text>
+                  ))}
+                </>
+              )}
+            </View>
+          </ScrollView>
+        );
+      case 'naringsinnhold':
+        return (
+          <ScrollView style={styles.tabContent}>
+            <View style={styles.gridContainer}>
+              {product.nutrition && product.nutrition.length > 0 ? (
+                product.nutrition.map((nut, idx) => (
+                  <View key={idx} style={styles.gridItem}>
+                    <Text style={styles.infoLabel}>{nut.display_name}</Text>
+                    <Text style={[styles.infoValue, { color: theme.text }]}>    
+                      {nut.amount}{nut.unit}
+                    </Text>
+                  </View>
+                ))
+              ) : (
+                <View style={styles.gridItemFull}>
+                  <Text style={[styles.sectionBody, { color: theme.text }]}>Ingen næringsinnhold tilgjengelig.</Text>
+                </View>
+              )}
+            </View>
+          </ScrollView>
         );
       default:
         return null;
     }
   };
 
+  const renderTabBar = (props: any) => (
+    <TabBar
+      {...props}
+      scrollEnabled
+      style={{ backgroundColor: theme.background }}
+      indicatorStyle={{ backgroundColor: theme.primary }}
+      labelStyle={{ color: theme.text }}
+      activeColor={theme.text}
+      inactiveColor={theme.text}
+    />
+  );
+
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      {/* Hero Section */}
+    <View style={[styles.container, { backgroundColor: theme.background }]}>      
       <View style={styles.heroContainer}>
         <Image
           source={{ uri: product.image }}
           style={styles.heroImage}
           resizeMode="cover"
         />
-        <View style={styles.overlay}>
-          <Text style={[styles.heroTextTitle, { color: theme.background }]}>
-            {product.name}
-          </Text>
-          <Text style={[styles.heroTextPrice, { color: theme.background }]}>
+      </View>
+
+      <View style={styles.actionContainer}>
+        <Text style={[styles.nameText, { color: theme.text }]}>   
+          {product.name}
+        </Text>
+        <Text style={[styles.sectionSubtitle, { color: theme.text }]}>  
+          {product.store?.name}
+        </Text>
+
+        <View style={styles.row}>
+          <Text style={[styles.priceText, { color: theme.text }]}>  
             {product.current_price} kr
           </Text>
+          <TouchableOpacity
+            onPress={() => addToCart(product)}
+            style={[styles.addButton, { backgroundColor: theme.primary }]}
+          >
+            <AntDesign name="plus" size={20} color="#fff" />
+          </TouchableOpacity>
         </View>
       </View>
 
-      {/* Tabs */}
-      <View style={styles.tabRow}>
-        {TABS.map((tab) => {
-          const isActive = tab === activeTab;
-          return (
-            <TouchableOpacity
-              key={tab}
-              style={[
-                styles.tabButton,
-                {
-                  borderBottomColor: isActive ? theme.primary : 'transparent',
-                },
-              ]}
-              onPress={() => setActiveTab(tab)}
-            >
-              <Text
-                style={{
-                  color: isActive ? theme.text : theme.text,
-                  fontWeight: isActive ? 'bold' : 'normal',
-                }}
-              >
-                {tab}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
-      {/* Tab Content */}
-      <ScrollView style={styles.tabContent}>{renderTabContent()}</ScrollView>
+      <TabView
+        navigationState={{ index, routes }}
+        renderScene={renderScene}
+        renderTabBar={renderTabBar}
+        onIndexChange={setIndex}
+        initialLayout={{ width: layout.width }}
+        style={{ flex: 1 }}
+      />
     </View>
   );
 }
 
-// Styles
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  heroContainer: {
-    width: '100%',
-    height: width * 0.6,
-    backgroundColor: '#eee',
-  },
-  heroImage: {
-    width: '100%',
-    height: '100%',
-  },
-  overlay: {
-    position: 'absolute',
-    left: 16,
-    bottom: 16,
-  },
-  heroTextTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  heroTextPrice: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  tabRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#ccc',
-  },
-  tabButton: {
-    paddingVertical: 8,
-    borderBottomWidth: 2,
-  },
-  tabContent: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 8,
-  },
-  tabContainer: {
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  sectionSubtitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    marginBottom: 6,
-  },
-  sectionBody: {
-    fontSize: 14,
-    marginBottom: 4,
-  },
+  container: { flex: 1 },
+  heroContainer: { width: '100%', height: width * 0.6, backgroundColor: '#eee' },
+  heroImage: { width: '100%', height: '100%' },
+  actionContainer: { paddingHorizontal: 16, paddingVertical: 8 },
+  nameText: { fontSize: 20, fontWeight: '600', marginBottom: 6 },
+  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  priceText: { fontSize: 20, fontWeight: 'bold' },
+  addButton: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  tabContent: { flex: 1, paddingHorizontal: 16, paddingTop: 8 },
+  tabContainer: { marginBottom: 20 },
+  gridContainer: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -8 },
+  gridItem: { width: '50%', paddingHorizontal: 8, marginBottom: 16 },
+  gridItemFull: { width: '100%', paddingHorizontal: 8, marginBottom: 16 },
+  sectionSubtitle: { fontSize: 16, fontWeight: '500', color: '#888', marginBottom: 6 },
+  sectionBody: { fontSize: 14, marginBottom: 4, lineHeight: 20 },
+  infoLabel: { fontSize: 12, color: '#888', marginBottom: 4 },
+  infoValue: { fontSize: 16, fontWeight: '500' },
 });
-
