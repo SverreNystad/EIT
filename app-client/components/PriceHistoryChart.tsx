@@ -6,45 +6,41 @@ import { PriceHistory } from '@/types/kassal';
 
 interface PriceHistoryChartProps {
   data: PriceHistory[];
-  // Optionally pass in multiple data arrays if you have more than one history set
-  // data2?: PriceHistory[];
 }
 
 export default function PriceHistoryChart({ data }: PriceHistoryChartProps) {
-  const screenWidth = Dimensions.get('window').width - 32; // minus padding
+  const screenWidth = Dimensions.get('window').width - 32; // account for horizontal padding
 
-  // Format data for the chart
-  // Labels are date strings, data is numeric price
-  // For display, you might want to shorten or format dates, e.g. "MM/DD" or "DD MMM"
-  const labels = data.map((entry) => {
-    const dateObj = new Date(entry.date);
-    return `${dateObj.getDate()}/${dateObj.getMonth() + 1}`;
+  // 1. Sort entries ascending by date
+  const sortedData = [...data].sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
+
+  // 2. Build raw labels and values
+  const rawLabels = sortedData.map((entry) => {
+    const d = new Date(entry.date);
+    // e.g. "23/4"
+    return `${d.getDate()}/${d.getMonth() + 1}`;
   });
-  const prices = data.map((entry) => entry.price);
+  const prices = sortedData.map((entry) => entry.price);
 
-  // Example if you want multiple lines in the same chart:
-  // const secondPrices = data2?.map(entry => entry.price / 2) ?? [];
+  // 3. Only show up to ~6 labels to prevent crowding
+  const maxLabels = 6;
+  const skip = Math.ceil(rawLabels.length / maxLabels);
+  const labels = rawLabels.map((lbl, idx) => (idx % skip === 0 ? lbl : ''));
 
   const chartData = {
     labels,
     datasets: [
       {
         data: prices,
-        // color, strokeWidth, etc. are optional and can be customized
         color: (opacity = 1) => `rgba(0, 128, 255, ${opacity})`,
         strokeWidth: 2,
       },
-      // Uncomment if you have a second data set
-      // {
-      //   data: secondPrices,
-      //   color: (opacity = 1) => `rgba(255, 0, 0, ${opacity})`,
-      //   strokeWidth: 2,
-      // },
     ],
-    legend: ['Price Over Time'], // optional
+    legend: ['Price Over Time'],
   };
 
-  // Chart configuration for styling
   const chartConfig = {
     backgroundGradientFrom: '#fff',
     backgroundGradientTo: '#fff',
@@ -55,6 +51,10 @@ export default function PriceHistoryChart({ data }: PriceHistoryChartProps) {
       strokeWidth: '2',
       stroke: '#ffa726',
     },
+    // Shrink all axis label text
+    propsForLabels: {
+      fontSize: '10',
+    }, // you can override SVG Text props here :contentReference[oaicite:0]{index=0}
   };
 
   return (
@@ -64,9 +64,13 @@ export default function PriceHistoryChart({ data }: PriceHistoryChartProps) {
         width={screenWidth}
         height={220}
         chartConfig={chartConfig}
-        withInnerLines={true}
-        withOuterLines={true}
+        withInnerLines
+        withOuterLines
         bezier
+        // Rotate X‑axis labels to 45° so they don’t collide :contentReference[oaicite:1]{index=1}
+        verticalLabelRotation={45}
+        // Nudge the labels up/down if they’re still too tight :contentReference[oaicite:2]{index=2}
+        xLabelsOffset={-10}
         style={{
           marginVertical: 8,
           borderRadius: 8,
