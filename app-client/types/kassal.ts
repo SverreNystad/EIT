@@ -1,3 +1,11 @@
+export interface Sale {
+  type: "price" | "percentage" | "n_for_price";
+  price?: number;
+  discount_percentage?: number;
+  n?: number;
+  total_price?: number;
+}
+
 export interface PriceHistory {
   price: number;
   date: string; // ISO datetime string
@@ -15,9 +23,7 @@ export interface Nutrition {
   amount: number;
   unit: string;
 }
-export interface ShoppingItem extends Product {
-  checked: boolean;
-}
+
 export interface Store {
   name: string;
   code: string;
@@ -45,31 +51,11 @@ export interface Product {
   nutrition: Nutrition[];
   created_at: string;
   updated_at: string;
+  sale?: Sale; // Optional sale information
 }
 
-export interface ProductsLinks {
-  first: string;
-  last?: string;
-  prev?: string;
-  next?: string;
-}
-
-export interface ProductsMeta {
-  current_page: number;
-  from: number;
-  path: string;
-  per_page: number;
-  to: number;
-}
-
-export interface ProductsResponse {
-  data: Product[];
-  links: ProductsLinks;
-  meta: ProductsMeta;
-}
-
-export interface SingleProductResponse {
-  data: Product;
+export interface ShoppingItem extends Product {
+  checked: boolean;
 }
 
 export interface CurrentPriceDetail {
@@ -100,17 +86,7 @@ export interface EanProduct {
   kassalapp: Kassalapp;
   created_at: string;
   updated_at: string;
-}
-
-export interface ProductsByEanData {
-  ean: string;
-  products: EanProduct[];
-  allergens: Allergen[];
-  nutrition: Nutrition[];
-}
-
-export interface ProductsByEanResponse {
-  data: ProductsByEanData;
+  sale?: Sale; // Optional sale info on EAN-level products
 }
 
 export interface ProductCompare {
@@ -130,6 +106,43 @@ export interface ProductCompare {
   kassalapp: Kassalapp;
   created_at: string;
   updated_at: string;
+  sale?: Sale; // Optional sale in comparison view
+}
+
+export interface ProductsLinks {
+  first: string;
+  last?: string;
+  prev?: string;
+  next?: string;
+}
+
+export interface ProductsMeta {
+  current_page: number;
+  from: number;
+  path: string;
+  per_page: number;
+  to: number;
+}
+
+export interface ProductsResponse {
+  data: Product[];
+  links: ProductsLinks;
+  meta: ProductsMeta;
+}
+
+export interface SingleProductResponse {
+  data: Product;
+}
+
+export interface ProductsByEanData {
+  ean: string;
+  products: EanProduct[];
+  allergens: Allergen[];
+  nutrition: Nutrition[];
+}
+
+export interface ProductsByEanResponse {
+  data: ProductsByEanData;
 }
 
 export interface ProductsCompareData {
