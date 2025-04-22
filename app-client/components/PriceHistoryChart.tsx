@@ -1,40 +1,49 @@
 // PriceHistoryChart.tsx
 import React from 'react';
-import { Dimensions, View } from 'react-native';
+import {
+  Dimensions,
+  View,
+  useColorScheme,
+  StyleSheet,
+  ViewStyle,
+} from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { PriceHistory } from '@/types/kassal';
+import { getTheme } from '@/constants/Colors';
 
 interface PriceHistoryChartProps {
   data: PriceHistory[];
 }
 
 export default function PriceHistoryChart({ data }: PriceHistoryChartProps) {
-  const screenWidth = Dimensions.get('window').width - 32; // account for horizontal padding
+  const colorScheme = useColorScheme() || 'light';
+  const theme = getTheme(colorScheme);
 
-  // 1. Sort entries ascending by date
-  const sortedData = [...data].sort(
+  const screenWidth = Dimensions.get('window').width - 32;
+
+  // 1) sort chronologically
+  const sorted = [...data].sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
   );
 
-  // 2. Build raw labels and values
-  const rawLabels = sortedData.map((entry) => {
-    const d = new Date(entry.date);
-    // e.g. "23/4"
+  // 2) format dates
+  const rawLabels = sorted.map((e) => {
+    const d = new Date(e.date);
     return `${d.getDate()}/${d.getMonth() + 1}`;
   });
-  const prices = sortedData.map((entry) => entry.price);
+  const prices = sorted.map((e) => e.price);
 
-  // 3. Only show up to ~6 labels to prevent crowding
+  // 3) thin labels to ≈6
   const maxLabels = 6;
   const skip = Math.ceil(rawLabels.length / maxLabels);
-  const labels = rawLabels.map((lbl, idx) => (idx % skip === 0 ? lbl : ''));
+  const labels = rawLabels.map((lbl, i) => (i % skip === 0 ? lbl : ''));
 
   const chartData = {
     labels,
     datasets: [
       {
         data: prices,
-        color: (opacity = 1) => `rgba(0, 128, 255, ${opacity})`,
+        color: (_: number) => theme.primary,
         strokeWidth: 2,
       },
     ],
@@ -42,40 +51,52 @@ export default function PriceHistoryChart({ data }: PriceHistoryChartProps) {
   };
 
   const chartConfig = {
-    backgroundGradientFrom: '#fff',
-    backgroundGradientTo: '#fff',
-    color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-    labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+    backgroundGradientFrom: theme.card,
+    backgroundGradientTo: theme.card,
+    color: (_: number) => theme.text,
+    labelColor: (_: number) => theme.text,
     propsForDots: {
       r: '3',
       strokeWidth: '2',
-      stroke: '#ffa726',
+      stroke: theme.accent,
     },
-    // Shrink all axis label text
     propsForLabels: {
       fontSize: '10',
-    }, // you can override SVG Text props here :contentReference[oaicite:0]{index=0}
+    },
+    propsForBackgroundLines: {
+      stroke: theme.text + '20',
+    },
+  };
+
+  // merge your chart style here
+  const chartStyle: ViewStyle = {
+    marginVertical: 8,
+    borderRadius: 8,
+    alignSelf: 'center',
+    backgroundColor: theme.card,
   };
 
   return (
-    <View>
+    <View style={[styles.wrapper, { backgroundColor: theme.background }]}>
       <LineChart
         data={chartData}
         width={screenWidth}
         height={220}
         chartConfig={chartConfig}
+        style={chartStyle}    
         withInnerLines
         withOuterLines
         bezier
-        // Rotate X‑axis labels to 45° so they don’t collide :contentReference[oaicite:1]{index=1}
         verticalLabelRotation={45}
-        // Nudge the labels up/down if they’re still too tight :contentReference[oaicite:2]{index=2}
         xLabelsOffset={-10}
-        style={{
-          marginVertical: 8,
-          borderRadius: 8,
-        }}
       />
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  wrapper: {
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+});
