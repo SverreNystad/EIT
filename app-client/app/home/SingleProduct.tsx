@@ -22,11 +22,11 @@ type HomeStackParamList = {
 type SingleProductRouteProp = RouteProp<HomeStackParamList, 'singleProduct'>;
 
 const TABS = [
-  'Overview',
-  'Price History',
-  'Ingredients & Allergens',
-  'Nutrition',
-  'Store Info',
+  'Oversikt',
+  'Pris historikk',
+  'Ingredienser og allergener',
+  'Næringsinnhold',
+  'Butikkinfo',
 ];
 
 const { width } = Dimensions.get('window');
@@ -44,7 +44,7 @@ export default function SingleProduct() {
   // Simple tab switching logic
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'Overview':
+      case 'Oversikt':
         return (
           <View style={styles.tabContainer}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>
@@ -72,7 +72,7 @@ export default function SingleProduct() {
             </Text>
           </View>
         );
-      case 'Price History':
+      case 'Pris historikk':
         return (
           <View style={styles.tabContainer}>
             {product.price_history && product.price_history.length > 0 ? (
@@ -82,19 +82,19 @@ export default function SingleProduct() {
               </>
             ) : (
               <Text style={[styles.sectionBody, { color: theme.text }]}>
-                No price history available.
+                Ingen Pris historikk, tilgjengelig.
               </Text>
             )}
           </View>
         );
-      case 'Ingredients & Allergens':
+      case 'Ingredienser og allergener':
         return (
           <View style={styles.tabContainer}>
             <Text style={[styles.sectionSubtitle, { color: theme.text }]}>
-              Ingredients:
+              Ingredienser:
             </Text>
             <Text style={[styles.sectionBody, { color: theme.text }]}>
-              {product.ingredients || 'No ingredients listed.'}
+              {product.ingredients || 'ingen ingredients tilgjengelig.'}
             </Text>
             {product.allergens && product.allergens.length > 0 && (
               <>
@@ -104,7 +104,7 @@ export default function SingleProduct() {
                     { color: theme.text, marginTop: 12 },
                   ]}
                 >
-                  Allergens:
+                  Allergener:
                 </Text>
                 {product.allergens.map((allergen, idx) => (
                   <Text key={idx} style={{ color: theme.text }}>
@@ -115,7 +115,7 @@ export default function SingleProduct() {
             )}
           </View>
         );
-      case 'Nutrition':
+      case 'Næringsinnhold':
         return (
           <View style={styles.tabContainer}>
             {product.nutrition && product.nutrition.length > 0 ? (
@@ -127,12 +127,12 @@ export default function SingleProduct() {
               ))
             ) : (
               <Text style={[styles.sectionBody, { color: theme.text }]}>
-                No nutritional data available.
+                Ingen næringsinnhold tilgjengelig.
               </Text>
             )}
           </View>
         );
-      case 'Store Info':
+      case 'Butikkinfo':
         return (
           <View style={styles.tabContainer}>
             <Text style={[styles.sectionSubtitle, { color: theme.text }]}>
