@@ -45,6 +45,123 @@ export default function ProductItem({ product, isOffer, onPress }: ProductItemPr
     setItemLayout(e.nativeEvent.layout);
   };
 
+
+// Helper to render sale vs regular price
+const renderPrice = () => {
+  const sale = product.sale;
+  const base = product.current_price.toFixed(2) + ' kr';
+
+  if (!sale) {
+    return (
+      <Text style={{ fontSize: 16, color: theme.text, fontWeight: 'bold' }}>
+        {base}
+      </Text>
+    );
+  }
+
+  // price sale
+  if (sale.type === 'price' && sale.price != null) {
+    return (
+      <View>
+        <Text
+          style={{
+            fontSize: 13,
+            textDecorationLine: 'line-through',
+            color: theme.text,
+            opacity: 0.5,
+          }}
+        >
+          {base}
+        </Text>
+        <Text
+          style={{
+            fontSize: 16,
+            color: '#D72638',
+            fontWeight: 'bold',
+          }}
+        >
+          {sale.price.toFixed(2)} kr
+        </Text>
+      </View>
+    );
+  }
+
+  // percentage sale
+  if (
+    sale.type === 'percentage' &&
+    sale.discount_percentage != null
+  ) {
+    const discounted =
+      product.current_price * (1 - sale.discount_percentage / 100);
+    return (
+      <View>
+        <Text
+          style={{
+            fontSize: 13,
+            textDecorationLine: 'line-through',
+            color: theme.text,
+            opacity: 0.5,
+          }}
+        >
+          {base}
+        </Text>
+        <Text
+          style={{
+            fontSize: 16,
+            color: '#D72638',
+            fontWeight: 'bold',
+          }}
+        >
+          {discounted.toFixed(2)} kr (-{sale.discount_percentage}%)
+        </Text>
+      </View>
+    );
+  }
+
+  // n-for-price sale
+  if (
+    sale.type === 'n_for_price' &&
+    sale.n != null &&
+    sale.total_price != null
+  ) {
+    const unitPrice = (sale.total_price / sale.n).toFixed(2);
+    return (
+      <View>
+        <Text
+          style={{
+            fontSize: 13,
+            textDecorationLine: 'line-through',
+            color: theme.text,
+            opacity: 0.5,
+          }}
+        >
+          {base}
+        </Text>
+        <Text
+          style={{
+            fontSize: 16,
+            color: '#D72638',
+            fontWeight: 'bold',
+          }}
+        >
+          {sale.n} for {sale.total_price.toFixed(2)} kr{' '}
+          <Text style={{ fontSize: 12, color: theme.text }}>
+            ({unitPrice} kr each)
+          </Text>
+        </Text>
+      </View>
+    );
+  }
+
+  // fallback to base
+  return (
+    <Text style={{ fontSize: 16, color: theme.text, fontWeight: 'bold' }}>
+      {base}
+    </Text>
+  );
+};
+
+
   const handleAddToCart = async () => {
     // 1) Add to cart right away
     addToCart(product);
@@ -134,30 +251,24 @@ export default function ProductItem({ product, isOffer, onPress }: ProductItemPr
           </Text>
 
           {/* Price Section */}
+          {/* Price Section */}
           <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
-            {isOffer && (
+            {isOffer && product.sale ? (
+              // renderPrice() already returns a <View> containing both the crossed‑out base price and the sale price
+              renderPrice()
+            ) : (
               <Text
                 style={{
-                  fontSize: 14,
-                  textDecorationLine: "line-through",
-                  color: theme.text,
-                  opacity: 0.5,
+                  fontSize: 16,
+                  fontWeight: "bold",
+                  color: theme.primary,
                 }}
               >
-                199 kr
+                {product.current_price.toFixed(2)} kr
               </Text>
             )}
-            <Text
-              style={{
-                fontSize: 16,
-                fontWeight: "bold",
-                color: isOffer ? "#D72638" : theme.primary,
-                marginLeft: 6,
-              }}
-            >
-              {product.current_price} kr
-            </Text>
           </View>
+
         </View>
 
         {/* Add to Cart Section */}
