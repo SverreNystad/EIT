@@ -17,7 +17,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { useQuery } from '@tanstack/react-query';
 
 import { getTheme } from '@/constants/Colors';
-import { getProducts } from '@/services/api';
+import { getProducts, getProductsOnSale } from '@/services/api';
 import SavingsBox from '@/components/ui/SavingsBox';
 import Section from '@/components/ui/Section';
 import { Product, ProductsResponse } from '@/types/kassal';
@@ -64,6 +64,15 @@ export default function HomeScreen() {
 
   // Use live savings values
   const { moneySaved, co2Saved } = useSavings();
+
+
+  const { data: salesData } = useQuery<ProductsResponse>({
+    queryKey: ["products-on-sale", currentPage, pageSize],
+    queryFn: () => getProductsOnSale({ page: currentPage, size: pageSize }),
+  });
+
+
+  const productsOnSale = salesData?.data ?? [];
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -157,7 +166,7 @@ export default function HomeScreen() {
           <>
             <Section
               title="Tilbud for deg"
-              data={products}
+              data={productsOnSale}
               isOfferSection
               onSeeMore={() => navigation.navigate('tilbud')}
               productClick={handlePressProduct}
