@@ -14,6 +14,25 @@ import {
 import { API_ROUTES } from "./apiRoutes";
 import axios from "axios";
 
+export const getProductsOnSale = async (params: {
+  page?: number;
+  size?: number;
+}): Promise<ProductsResponse> => {
+  console.log("getProductsOnSale", params);
+  try {
+    const response = await axios.get<ProductsResponse>(
+      API_ROUTES.products.getProductsOnSale,
+      { params }
+    );
+    console.log("response", response);
+    return response.data;
+  } catch (error: any) {
+    console.error("Error fetching products on sale:", error);
+    // surface either the backend detail or the generic message
+    throw new Error(error.response?.data?.detail || error.message);
+  }
+};
+
 export const getPhysicalStores = async (params: {
   search?: string;
   page?: number;
@@ -133,10 +152,10 @@ export const recommendedRecipes = async (
     const response = await axios.post<RecommendedRecipesResponse>(
       API_ROUTES.recipes.recommend,
       payload
-    )
+    );
     return response.data;
   } catch (error: any) {
-    console.error(error.message)
+    console.error(error.message);
     throw new Error(error.response?.data?.detail || error.message);
   }
 };
