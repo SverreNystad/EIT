@@ -1,0 +1,25 @@
+@startuml
+' Define the components
+package "Backend" as API {
+    component "FastAPI gateway" as FastAPIApp
+    component "Configuration" as Config
+    component "Kassal API Service" as KassalAPI
+    component "Recommenders Service" as Recommenders
+    component "Discount Service" as DiscountService
+    component "Web Scraper Service" as WebScraper
+    component "Information Extractor Service" as InfoExtractor
+}
+
+
+' Define the relationships between components
+FastAPIApp --> KassalAPI: "API calls for stores/products"
+FastAPIApp --> Recommenders: "Meal plan & recipe requests"
+FastAPIApp --> DiscountService: "Fetch discount info"
+
+KassalAPI --> Config: "Uses API key"
+InfoExtractor --> Config: "Uses API key"
+
+DiscountService --> WebScraper: "Scrape web data"
+DiscountService --> InfoExtractor: "Extract discount details"
+
+@enduml
