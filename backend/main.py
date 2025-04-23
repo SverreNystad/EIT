@@ -6,7 +6,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.configuration import KASSAL_API_KEY
 from src.kassal.kassal_service import KassalAPI
-from src.kassal.models_physical_stores import PhysicalStoresResponse, PhysicalStore
+from src.kassal.models_physical_stores import (
+    PhysicalStoresResponse,
+    PhysicalStore,
+)
 from src.kassal.models_products import ProductsResponse, Product
 from src.kassal.models_products_ean import ProductsByEanData
 from src.kassal.models_products_compare import ProductsCompareData
@@ -14,6 +17,14 @@ from src.recommenders.meal_plan_service import generate_meal_plan, suggest_recip
 from src.recommenders.models import MealRecommendationRequest, _transform_df_to_pydantic
 from src.sales_dao import load_product_sales
 from src.sales_service import ProductSales, Sale
+from fastapi import Query
+from src.kassal.models_products import ProductsResponse, Product
+
+
+from math import ceil
+from fastapi import Query
+from src.kassal.models_products import ProductsResponse, Product
+from src.kassal.models_products import ProductsLinks, ProductsMeta
 
 # Load sales data once at startup (uses default path inside load_product_sales)
 try:
@@ -70,6 +81,55 @@ app.add_middleware(
 )
 
 kassal_api = KassalAPI(token=KASSAL_API_KEY)
+
+
+@app.get("/products/on-sale", response_model=ProductsResponse)
+async def get_products_on_sale(
+    page: int = Query(1, ge=1, description="Page number"),
+    size: int = Query(10, ge=1, description="Items per page"),
+):
+    sale_names = [item.name for ps in _sales_list for item in ps.products.products]
+    all_products: list[Product] = []
+    for name in sale_names:
+        try:
+            resp = kassal_api.get_products(
+                search=name,
+                size=1,
+            )
+            all_products.extend(resp.data)
+        except Exception:
+            continue
+
+    unique_products = {p.id: p for p in all_products}.values()
+    product_list = list(unique_products)
+
+    enriched = enrich_products_with_sales(product_list, _sales_list)
+
+    total = len(enriched)
+    last_page = ceil(total / size) if total else 1
+    start = (page - 1) * size
+    end = min(start + size, total)
+    page_items = enriched[start:end]
+
+    base_path = "/products/on-sale"
+    links = ProductsLinks(
+        first=f"{base_path}?page=1&size={size}",
+        last=f"{base_path}?page={last_page}&size={size}" if total else None,
+        prev=f"{base_path}?page={page-1}&size={size}" if page > 1 else None,
+        next=f"{base_path}?page={page+1}&size={size}" if page < last_page else None,
+    )
+
+    meta = ProductsMeta.model_validate(
+        {
+            "current_page": page,
+            "from": start + 1 if total else 0,
+            "to": end,
+            "per_page": size,
+            "path": base_path,
+        }
+    )
+
+    return ProductsResponse(data=page_items, links=links, meta=meta)
 
 
 @app.get("/physical-stores", response_model=PhysicalStoresResponse)
