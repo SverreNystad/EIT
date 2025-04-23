@@ -15,7 +15,7 @@ distro==1.9.0
 dnspython==2.7.0
 email_validator==2.2.0
 executing==2.2.0
-fastapi==0.115.8
+fastapi==0.115.12
 fastapi-cli==0.0.7
 filelock==3.18.0
 flatbuffers==25.2.10
