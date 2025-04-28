@@ -43,11 +43,11 @@ class Product(BaseModel):
     image: str
     description: Optional[str]
     ingredients: Optional[str]
-    current_price: float
+    current_price: Optional[float]
     current_unit_price: Optional[float]
     weight: Optional[float]
     weight_unit: Optional[str]
-    store: Store
+    store: Optional[Store]
     price_history: List[PriceHistory]
     allergens: List[Allergen]
     nutrition: List[Nutrition]
