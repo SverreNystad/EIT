@@ -93,7 +93,7 @@ psutil==7.0.0
 ptyprocess==0.7.0
 pure_eval==0.2.3
 pydantic==2.10.6
-pydantic_core==2.27.2
+pydantic_core==2.34.1
 Pygments==2.19.1
 PySocks==1.7.1
 pytest==8.3.4
